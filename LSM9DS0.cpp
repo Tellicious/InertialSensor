@@ -192,9 +192,7 @@ void LSM9DS0::init(){
 //-----------------------Configuration-----------------------//
 uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq){
 	// Check if the device ID is correct
-	uint8_t asd=readRegister(_chipSelectPin_G, LSM9DS0_WHO_AM_I_G);
 	if (readRegister(_chipSelectPin_G, LSM9DS0_WHO_AM_I_G)!=LSM9DS0_ID_G){
-		Serial.println(asd,BIN);
 		return 0;
 	}
 	//
