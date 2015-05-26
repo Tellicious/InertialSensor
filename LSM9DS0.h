@@ -126,7 +126,7 @@ class LSM9DS0: public InertialSensor{
 		virtual inline uint8_t read_thermo(uint32_t timeout){return read_raw_thermo();}; //default read method for thermometer 
 		uint8_t read_raw_thermo(); //read data from thermometer registers
 		uint8_t read_thermo_DRDY(uint32_t timeout); //read temperature when DRDY is high (same INT2 and ODR as magnetometer), timeout in us
-		uint8_t read_thermo_STATUS(uint32_t timeout); //read data from gyroscope if available (reads the status register). timeout in us
+		uint8_t read_thermo_STATUS(uint32_t timeout); //read data from thermometer if available (reads the status register), timeout in us
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
 		float _sc_fact_g, _sc_fact_a, _sc_fact_m;		//scale factors

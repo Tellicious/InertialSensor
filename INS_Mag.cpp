@@ -14,86 +14,86 @@ INS_Mag::INS_Mag(InertialSensor &sensor, float &meas_x, float &meas_y, float &me
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=-1;
-			_sz=-1;
+			_sx = 1;
+			_sy = - 1;
+			_sz = - 1;
 			break;
 		case (X_LEFT_Z_UP):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=-1;
-			_sz=-1;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = - 1;
 			break;
 		case (X_BACK_Z_UP):
-			_sx=-1;
-			_sy=1;
-			_sz=-1;
+			_sx = - 1;
+			_sy = 1;
+			_sz = - 1;
 			break;
 		case (X_RIGHT_Z_UP):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=1;
-			_sz=-1;
+			_sx = 1;
+			_sy = 1;
+			_sz = - 1;
 			break;
 		case (X_FRONT_Z_DOWN):
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=1;
-			_sz=1;
+			_sx = 1;
+			_sy = 1;
+			_sz = 1;
 			break;
 		case (X_LEFT_Z_DOWN):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=-1;
-			_sz=1;
+			_sx = 1;
+			_sy = - 1;
+			_sz = 1;
 			break;
 		case (X_BACK_Z_DOWN):
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=-1;
-			_sz=1;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = 1;
 			break;
 		case (X_RIGHT_Z_DOWN):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=1;
-			_sz=1;
+			_sx = - 1;
+			_sy = 1;
+			_sz = 1;
 			break;
 		default:
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=0;
-			_sy=0;
-			_sz=0;
+			_sx = 0;
+			_sy = 0;
+			_sz = 0;
 			break;
 	}
 	x = (float) _sx * (*_x_p);
 	y = (float) _sy * (*_y_p);
 	z = (float) _sz * (*_z_p);
 	instanced++;
-	instance=instanced;
-	bx=0;
-	by=0;
-	bz=0;
-	s11=1;
-	s12=0;
-	s13=0;
-	s22=1;
-	s23=0;
-	s33=1;
+	instance = instanced;
+	bx = 0;
+	by = 0;
+	bz = 0;
+	s11 = 1;
+	s12 = 0;
+	s13 = 0;
+	s22 = 1;
+	s23 = 0;
+	s33 = 1;
 }
 
 //====================================Public Members=========================================//
@@ -124,44 +124,44 @@ void INS_Mag::turn_off(){
 //--------------------Init calibration-----------------------//
 void INS_Mag::initialize_calibration(uint8_t number_of_measures){
 	MatrixXf TMP(number_of_measures, 3);
-	_data=TMP;
-	_cal_count=0;
-	bx=0;
-	by=0;
-	bz=0;
-	s11=1;
-	s12=0;
-	s13=0;
-	s22=1;
-	s23=0;
-	s33=1;
+	_data = TMP;
+	_cal_count = 0;
+	bx = 0;
+	by = 0;
+	bz = 0;
+	s11 = 1;
+	s12 = 0;
+	s13 = 0;
+	s22 = 1;
+	s23 = 0;
+	s33 = 1;
 	return;
 }
 
 //-----------------Acquire single reading--------------------//
 void INS_Mag::cal_acquire(uint32_t timeout){
 	this->read(timeout);
-	_data(_cal_count,0)=x;
-	_data(_cal_count,1)=y;
-	_data(_cal_count,2)=z;
+	_data(_cal_count,0) = x;
+	_data(_cal_count,1) = y;
+	_data(_cal_count,2) = z;
 	_cal_count++;
 	return;
 }
 
 //----------------Acquire averaged readings-------------------//
 void INS_Mag::cal_acquire_averaged(uint8_t average_length, uint32_t timeout){
-	float x_tmp=0;
-	float y_tmp=0;
-	float z_tmp=0;
-	for(uint8_t ii=0;ii<average_length;ii++){
+	float x_tmp = 0;
+	float y_tmp = 0;
+	float z_tmp = 0;
+	for(uint8_t ii = 0; ii < average_length; ii++){
 		this->read(timeout);
-		x_tmp+=x;
-		y_tmp+=y;
-		z_tmp+=z;
+		x_tmp += x;
+		y_tmp += y;
+		z_tmp += z;
 	}
-	_data(_cal_count,0)=x_tmp/average_length;
-	_data(_cal_count,1)=y_tmp/average_length;
-	_data(_cal_count,2)=z_tmp/average_length;
+	_data(_cal_count,0) = x_tmp / average_length;
+	_data(_cal_count,1) = y_tmp / average_length;
+	_data(_cal_count,2) = z_tmp / average_length;
 	_cal_count++;
 	return;
 }
@@ -171,12 +171,12 @@ uint8_t INS_Mag::cal_compute(INS_Mag_cal calibration_mode, uint8_t print_flag){
 	MatrixXf P(1,1);
 	float radius;
 	if(!INS_MAG_VAL){
-		radius=mean_radius();
+		radius = mean_radius(_data);
 	}
 	else{
-		radius=INS_MAG_VAL;
+		radius = INS_MAG_VAL;
 	}
-	if (calibration_mode==INS_Mag_cal_9_param){
+	if (calibration_mode == INS_Mag_cal_9_param){
 		int8_t _data0[] = {0, 0, 0, 1, 0, 0, 1, 0, 1};
 		MatrixXs X0(9, 1, _data0);
 		P = GaussNewton_Sens_Cal_9(_data, radius, X0, (uint16_t) INS_MAG_NMAX_ITER, (double) INS_MAG_TOL);
@@ -187,7 +187,7 @@ uint8_t INS_Mag::cal_compute(INS_Mag_cal calibration_mode, uint8_t print_flag){
 		P = GaussNewton_Sens_Cal_6(_data, radius, X0, (uint16_t) INS_MAG_NMAX_ITER, (double) INS_MAG_TOL);
 	}
 	// Check result
-	if (P.sum()==0){
+	if (P.sum() == 0){
 		reset_data_matrix();
 		return 2;
 	}
@@ -196,24 +196,24 @@ uint8_t INS_Mag::cal_compute(INS_Mag_cal calibration_mode, uint8_t print_flag){
 		return 0;
 	}
 	else{
-		if (calibration_mode==INS_Mag_cal_9_param){
-			bx=P(0,0);
-			by=P(1,0);
-			bz=P(2,0);
-			s11=P(3,0);
-			s12=P(4,0);
-			s13=P(5,0);
-			s22=P(6,0);
-			s23=P(7,0);
-			s33=P(8,0);
+		if (calibration_mode == INS_Mag_cal_9_param){
+			bx = P(0,0);
+			by = P(1,0);
+			bz = P(2,0);
+			s11 = P(3,0);
+			s12 = P(4,0);
+			s13 = P(5,0);
+			s22 = P(6,0);
+			s23 = P(7,0);
+			s33 = P(8,0);
 		}
 		else {
-			bx=P(0,0);
-			by=P(1,0);
-			bz=P(2,0);
-			s11=P(3,0);
-			s22=P(4,0);
-			s33=P(5,0);
+			bx = P(0,0);
+			by = P(1,0);
+			bz = P(2,0);
+			s11 = P(3,0);
+			s22 = P(4,0);
+			s33 = P(5,0);
 		}
 		if (print_flag){
 			print_calibration_values();
@@ -229,10 +229,10 @@ uint8_t INS_Mag::calibrate(uint8_t number_of_measures, INS_Mag_cal calibration_m
 	Serial.println("Starting calibration...");
 	initialize_calibration(number_of_measures);
 	Serial.println("Press a key to acquire a sample");
-	while(_cal_count<number_of_measures){
+	while(_cal_count < number_of_measures){
 		if (Serial.available()>0){
             Serial.read();
-			cal_acquire(INS_MAG_TIMEOUT);
+			cal_acquire(timeout);
 			Serial.print("Sample acquired! Acc x: ");
 			Serial.print(x,4);
 			Serial.print(", Acc y: ");
@@ -252,10 +252,10 @@ uint8_t INS_Mag::calibrate_average(uint8_t number_of_measures, uint8_t average_l
 	Serial.println("Starting calibration with averaged values...");
 	initialize_calibration(number_of_measures);
 	Serial.println("Press a key to acquire a sample");
-	while(_cal_count<number_of_measures){
+	while(_cal_count < number_of_measures){
 		if (Serial.available()>0){
             Serial.read();
-			cal_acquire_averaged(INS_MAG_TIMEOUT);
+			cal_acquire_averaged(average_length, timeout);
 			Serial.print("Sample acquired! Acc x: ");
 			Serial.print(x,4);
 			Serial.print(", Acc y: ");
@@ -311,6 +311,10 @@ void INS_Mag::reset_data_matrix(){
 }
 
 //------------------Compute mean radius-------------------//
-float INS_Mag::mean_radius(){
-	return 5;
+float INS_Mag::mean_radius(MatrixXf &data){
+	MatrixXf radii(data.rows(),1);
+	for (uint16_t ii = 0; ii < data.rows(); ii++){
+		radii(ii,0) = sqrtf(data(ii,0) * data(ii,0) + data(ii,1) * data(ii,1) + data(ii,2) * data(ii,2));
+	}
+	return (radii.sum() / data.rows()); 
 }

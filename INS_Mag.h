@@ -50,6 +50,6 @@ private:
 	uint8_t _cal_count; //counter used to calibrate
 	void print_calibration_values(); //prints the calibration values
 	void reset_data_matrix(); //resets the _data matrix to a single value, in order to free some space
-	float mean_radius(); //returns the mean radius of a given set of measures
+	float mean_radius(MatrixXf &data); //returns the mean radius of a given set of measures
 };
 #endif

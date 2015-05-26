@@ -41,7 +41,7 @@
 class L3GD20H: public InertialSensor {
 	public:
 		L3GD20H (uint8_t CS_pin);	//constructor
-		L3GD20H (uint8_t CS_pin,uint8_t DRDY_pin);	//constructor with Data ready pin
+		L3GD20H (uint8_t CS_pin, uint8_t DRDY_pin);	//constructor with Data ready pin
 		virtual void init(); //initializes pins, SPI and variables
 		float x, y, z;	//output data
 		uint8_t config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq); //configure the gyroscope

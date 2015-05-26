@@ -57,13 +57,14 @@ class InertialSensor{
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout){return 0;}; //discards the first n measures after being called, timeout in us
 };
 //==================Include Sensors Libraries==================//
-#include "LSM9DS0.h";
-#include "L3GD20H.h";
+#include "LSM9DS0.h"
+#include "L3GD20H.h"
+#include "HMC5983.h"
 //==================Include Generic Libraries==================//
-#include "INS_Gyro.h";
-#include "INS_Accel.h";
-#include "INS_Mag.h";
-#include "INS_Thermo.h";
+#include "INS_Gyro.h"
+#include "INS_Accel.h"
+#include "INS_Mag.h"
+#include "INS_Thermo.h"
 #include "INS_Baro.h"
 
 #endif

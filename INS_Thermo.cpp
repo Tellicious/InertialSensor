@@ -9,18 +9,18 @@ uint8_t INS_Thermo::instanced=0;
 
 //=====================================Constructor==========================================//
 INS_Thermo::INS_Thermo(InertialSensor &sensor, float &meas):_sens(sensor){
-	_temp_p=&meas;
-	temp=*_temp_p;
+	_temp_p = &meas;
+	temp = *_temp_p;
 	instanced++;
-	instance=instanced;
-	bt=0;
+	instance = instanced;
+	bt = 0;
 }
 
 //====================================Public Members=========================================//
 //---------------------------Read-----------------------------//
 uint8_t INS_Thermo::read(uint32_t timeout){
-	uint8_t res=_sens.read_thermo(timeout);
-	temp=(*_temp_p)-bt;
+	uint8_t res = _sens.read_thermo(timeout);
+	temp = (*_temp_p) - bt;
 	return res;
 }
 

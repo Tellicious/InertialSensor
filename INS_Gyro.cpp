@@ -14,70 +14,70 @@ INS_Gyro::INS_Gyro(InertialSensor &sensor, float &meas_x, float &meas_y, float &
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=-1;
-			_sz=-1;
+			_sx = 1;
+			_sy = - 1;
+			_sz = - 1;
 			break;
 		case (X_LEFT_Z_UP):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=-1;
-			_sz=-1;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = - 1;
 			break;
 		case (X_BACK_Z_UP):
-			_sx=-1;
-			_sy=1;
-			_sz=-1;
+			_sx = - 1;
+			_sy = 1;
+			_sz = - 1;
 			break;
 		case (X_RIGHT_Z_UP):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=1;
-			_sz=-1;
+			_sx = 1;
+			_sy = 1;
+			_sz = - 1;
 			break;
 		case (X_FRONT_Z_DOWN):
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=1;
-			_sz=1;
+			_sx = 1;
+			_sy = 1;
+			_sz = 1;
 			break;
 		case (X_LEFT_Z_DOWN):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=-1;
-			_sz=1;
+			_sx = 1;
+			_sy = - 1;
+			_sz = 1;
 			break;
 		case (X_BACK_Z_DOWN):
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=-1;
-			_sz=1;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = 1;
 			break;
 		case (X_RIGHT_Z_DOWN):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=1;
-			_sz=1;
+			_sx = - 1;
+			_sy = 1;
+			_sz = 1;
 			break;
 		default:
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=0;
-			_sy=0;
-			_sz=0;
+			_sx = 0;
+			_sy = 0;
+			_sz = 0;
 			break;
 	}
 	x = (float) _sx * (*_x_p);

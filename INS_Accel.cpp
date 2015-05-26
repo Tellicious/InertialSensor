@@ -14,86 +14,86 @@ INS_Accel::INS_Accel(InertialSensor &sensor, float &meas_x, float &meas_y, float
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=-1;
-			_sz=-1;
+			_sx = 1;
+			_sy = -1;
+			_sz = - 1;
 			break;
 		case (X_LEFT_Z_UP):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=-1;
-			_sz=-1;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = - 1;
 			break;
 		case (X_BACK_Z_UP):
-			_sx=-1;
-			_sy=1;
-			_sz=-1;
+			_sx = - 1;
+			_sy = 1;
+			_sz = - 1;
 			break;
 		case (X_RIGHT_Z_UP):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=1;
-			_sz=-1;
+			_sx = 1;
+			_sy = 1;
+			_sz = - 1;
 			break;
 		case (X_FRONT_Z_DOWN):
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=1;
-			_sz=1;
+			_sx = 1;
+			_sy = 1;
+			_sz = 1;
 			break;
 		case (X_LEFT_Z_DOWN):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=1;
-			_sy=-1;
-			_sz=1;
+			_sx = 1;
+			_sy = - 1;
+			_sz = 1;
 			break;
 		case (X_BACK_Z_DOWN):
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=-1;
-			_sz=1;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = 1;
 			break;
 		case (X_RIGHT_Z_DOWN):
 			_y_p = &meas_x;
 			_x_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=-1;
-			_sy=1;
-			_sz=1;
+			_sx = - 1;
+			_sy = 1;
+			_sz = 1;
 			break;
 		default:
 			_x_p = &meas_x;
 			_y_p = &meas_y;
 			_z_p = &meas_z;
-			_sx=0;
-			_sy=0;
-			_sz=0;
+			_sx = 0;
+			_sy = 0;
+			_sz = 0;
 			break;
 	}
 	x = (float) _sx * (*_x_p);
 	y = (float) _sy * (*_y_p);
 	z = (float) _sz * (*_z_p);
 	instanced++;
-	instance=instanced;
-	bx=0;
-	by=0;
-	bz=0;
-	s11=1;
-	s12=0;
-	s13=0;
-	s22=1;
-	s23=0;
-	s33=1;
+	instance = instanced;
+	bx = 0;
+	by = 0;
+	bz = 0;
+	s11 = 1;
+	s12 = 0;
+	s13 = 0;
+	s22 = 1;
+	s23 = 0;
+	s33 = 1;
 }
 
 //====================================Public Members=========================================//
@@ -124,44 +124,44 @@ void INS_Accel::turn_off(){
 //--------------------Init calibration-----------------------//
 void INS_Accel::initialize_calibration(uint8_t number_of_measures){
 	MatrixXf TMP(number_of_measures, 3);
-	_data=TMP;
-	_cal_count=0;
-	bx=0;
-	by=0;
-	bz=0;
-	s11=1;
-	s12=0;
-	s13=0;
-	s22=1;
-	s23=0;
-	s33=1;
+	_data = TMP;
+	_cal_count = 0;
+	bx = 0;
+	by = 0;
+	bz = 0;
+	s11 = 1;
+	s12 = 0;
+	s13 = 0;
+	s22 = 1;
+	s23 = 0;
+	s33 = 1;
 	return;
 }
 
 //-----------------Acquire single reading--------------------//
 void INS_Accel::cal_acquire(uint32_t timeout){
 	this->read(timeout);
-	_data(_cal_count,0)=x;
-	_data(_cal_count,1)=y;
-	_data(_cal_count,2)=z;
+	_data(_cal_count,0) = x;
+	_data(_cal_count,1) = y;
+	_data(_cal_count,2) = z;
 	_cal_count++;
 	return;
 }
 
 //----------------Acquire averaged readings-------------------//
 void INS_Accel::cal_acquire_averaged(uint8_t average_length, uint32_t timeout){
-	float x_tmp=0;
-	float y_tmp=0;
-	float z_tmp=0;
-	for(uint8_t ii=0;ii<average_length;ii++){
+	float x_tmp = 0;
+	float y_tmp = 0;
+	float z_tmp = 0;
+	for(uint8_t ii = 0; ii < average_length; ii++){
 		this->read(timeout);
-		x_tmp+=x;
-		y_tmp+=y;
-		z_tmp+=z;
+		x_tmp += x;
+		y_tmp += y;
+		z_tmp += z;
 	}
-	_data(_cal_count,0)=x_tmp/average_length;
-	_data(_cal_count,1)=y_tmp/average_length;
-	_data(_cal_count,2)=z_tmp/average_length;
+	_data(_cal_count,0) = x_tmp / average_length;
+	_data(_cal_count,1) = y_tmp / average_length;
+	_data(_cal_count,2) = z_tmp / average_length;
 	_cal_count++;
 	return;
 }
@@ -180,7 +180,7 @@ uint8_t INS_Accel::cal_compute(INS_Accel_cal calibration_mode, uint8_t print_fla
 		P = GaussNewton_Sens_Cal_6(_data, (float) INS_G_VAL, X0, (uint16_t) INS_ACCEL_NMAX_ITER, (double) INS_ACCEL_TOL);
 	}
 	// Check if reached the maximum number of iterations or not (returns a zeroed-out matrix in that case)
-	if (P.sum()==0){
+	if (P.sum() == 0){
 		reset_data_matrix();
 		return 2;
 	}
@@ -192,23 +192,23 @@ uint8_t INS_Accel::cal_compute(INS_Accel_cal calibration_mode, uint8_t print_fla
 	// If there were no numerical issues
 	else{
 		if (calibration_mode==INS_Accel_cal_9_param){
-			bx=P(0,0);
-			by=P(1,0);
-			bz=P(2,0);
-			s11=P(3,0);
-			s12=P(4,0);
-			s13=P(5,0);
-			s22=P(6,0);
-			s23=P(7,0);
-			s33=P(8,0);
+			bx = P(0,0);
+			by = P(1,0);
+			bz = P(2,0);
+			s11 = P(3,0);
+			s12 = P(4,0);
+			s13 = P(5,0);
+			s22 = P(6,0);
+			s23 = P(7,0);
+			s33 = P(8,0);
 		}
 		else {
-			bx=P(0,0);
-			by=P(1,0);
-			bz=P(2,0);
-			s11=P(3,0);
-			s22=P(4,0);
-			s33=P(5,0);
+			bx = P(0,0);
+			by = P(1,0);
+			bz = P(2,0);
+			s11 = P(3,0);
+			s22 = P(4,0);
+			s33 = P(5,0);
 		}
 		if (print_flag){
 			print_calibration_values();
@@ -233,7 +233,7 @@ uint8_t INS_Accel::calibrate(uint8_t number_of_measures, INS_Accel_cal calibrati
 	while(_cal_count<number_of_measures){
 		if (Serial.available()>0){
             Serial.read();
-			cal_acquire(INS_ACCEL_TIMEOUT);
+			cal_acquire(timeout);
 			Serial.print("Sample acquired! Acc x: ");
 			Serial.print(x,4);
 			Serial.print(", Acc y: ");
@@ -256,7 +256,7 @@ uint8_t INS_Accel::calibrate_average(uint8_t number_of_measures, uint8_t average
 	while(_cal_count<number_of_measures){
 		if (Serial.available()>0){
             Serial.read();
-			cal_acquire_averaged(INS_ACCEL_TIMEOUT);
+			cal_acquire_averaged(average_length, timeout);
 			Serial.print("Sample acquired! Acc x: ");
 			Serial.print(x,4);
 			Serial.print(", Acc y: ");
