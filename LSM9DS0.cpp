@@ -169,14 +169,6 @@ void LSM9DS0::init(){
 		pinMode(_DRDY_pin_A,INPUT);
 		pinMode(_DRDY_pin_M,INPUT);
 	}
-	// initialize SPI
-	//uint8_t oldSPCR = SPCR;
-	SPI.begin();
-	SPI.setClockDivider(11);
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setDataMode(SPI_MODE0);
-	//_mySPCR = SPCR;
-	//SPCR = oldSPCR;
 	// initialize variables
 	gx = 0;
 	gy = 0;
@@ -247,6 +239,8 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 			return 2;
 	}
 	//
+	//Clear the Reference register
+	writeRegister(_chipSelectPin_G, LSM9DS0_REFERENCE_G, 0x00);
 	//Selected ODR, power on, 3-axis enabled
 	_CTRL1_val_G = (gyro_odr << 4) | (1 << 3) | 0x7;
 	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G, _CTRL1_val_G);
@@ -494,6 +488,16 @@ uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_
 	uint8_t FIFO_CTRL_val = 0x0;
 	writeRegister(_chipSelectPin_XM, LSM9DS0_FIFO_CTRL_REG, FIFO_CTRL_val);
 	//
+	// Clear the Reference/Offset registers
+	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_X_L_M, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_X_H_M, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Y_L_M, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Y_H_M, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Z_L_M, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Z_H_M, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_X, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_Y, 0x00);
+	writeRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_Z, 0x00);
 	// Set HP filter on accelerometer, magnetometer on continuous conversion
 	_CTRL7_val_XM = 0x0;
 	if (HP_accel_enable){

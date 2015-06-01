@@ -14,12 +14,12 @@
 #define HMC5983_CFG_A		0x00
 #define HMC5983_CFG_B		0x01
 #define HMC5983_MODE		0x02
-#define HMC5983_OUT_X_H	0x03
-#define HMC5983_OUT_X_L	0x04
-#define HMC5983_OUT_Z_H	0x05
-#define HMC5983_OUT_Z_L	0x06
-#define HMC5983_OUT_Y_H	0x07
-#define HMC5983_OUT_Y_L	0x08
+#define HMC5983_OUT_X_H		0x03
+#define HMC5983_OUT_X_L		0x04
+#define HMC5983_OUT_Z_H		0x05
+#define HMC5983_OUT_Z_L		0x06
+#define HMC5983_OUT_Y_H		0x07
+#define HMC5983_OUT_Y_L		0x08
 #define HMC5983_STATUS		0x09
 #define HMC5983_ID_REG_A	0x0A
 #define HMC5983_ID_REG_B	0x0B
@@ -60,8 +60,7 @@ void HMC5983::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint
 void HMC5983::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
 	//uint8_t oldSPCR=SPCR;				// actual SPI configuration register
   	//SPCR=_mySPCR;						// set the desired SPCR
-	digitalWrite(chipSelectPin, LOW);
-	delay(2000);	// ChipSelect low to select the chip
+	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
 	SPI.transfer(thisRegister); 		// send register location
 	SPI.transfer(thisValue);  		// send value to record into register
 	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
@@ -86,10 +85,6 @@ void HMC5983::init(){
 	if (_DRDY_pin != 0){
 		pinMode(_DRDY_pin,INPUT);
 	}
-	SPI.begin();
-	SPI.setClockDivider(11);
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setDataMode(SPI_MODE0);
 	x = 0;
 	y = 0;
 	z = 0;

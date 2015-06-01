@@ -92,10 +92,6 @@ void L3GD20H::init(){
 	if (_DRDY_pin != 0){
 		pinMode(_DRDY_pin,INPUT);
 	}
-	SPI.begin();
-	SPI.setClockDivider(11);
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setDataMode(SPI_MODE0);
 	x = 0;
 	y = 0;
 	z = 0;
@@ -164,6 +160,7 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 	//selected ODR, power on, 3-axis enabled
 	_CTRL1_val = ((odr_conf & 0xF) << 4) | (1 << 3) | 0x7;
 	writeRegister(_chipSelectPin, L3GD20H_CTRL1,_CTRL1_val);
+	//Clear the reference registers
 	// Discard the first n measures
 	if(! discard_measures_gyro(L3GD20H_DISCARDED_MEASURES,L3GD20H_DISCARD_TIMEOUT)){
 		return 0;
