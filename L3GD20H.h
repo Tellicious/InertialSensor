@@ -5,9 +5,10 @@
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
 //======================================Parameters=============================================//
-#define L3GD20H_DISCARDED_MEASURES	20	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
-#define L3GD20H_DISCARDED_MEASURES_ST 100 //number of measures to be discarded after performing self tests (greater than 1, preferably even)
-#define L3GD20H_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
+#define L3GD20H_GYRO_SELF_TEST_MEASURES 10 	//number of samples to be averaged when performing gyro self-test
+#define L3GD20H_DISCARDED_MEASURES		5	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
+#define L3GD20H_DISCARDED_MEASURES_ST 	10 	//number of measures to be discarded after performing self tests (greater than 1, preferably even)
+#define L3GD20H_DISCARD_TIMEOUT			2e6 //timeout time in us between measures when discarding
 //======================================ODR Values=============================================//
 // 5 LSB values: the first one has to be set in the LOW_ODR register, the remaining 4 in
 // CTRL1 as DR 1:0 and BW 1:0
@@ -42,7 +43,7 @@ class L3GD20H: public InertialSensor {
 	public:
 		L3GD20H (uint8_t CS_pin);	//constructor
 		L3GD20H (uint8_t CS_pin, uint8_t DRDY_pin);	//constructor with Data ready pin
-		virtual void init(); //initializes pins, SPI and variables
+		virtual void init(); //initializes pins and variables
 		float x, y, z;	//output data
 		uint8_t config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq); //configure the gyroscope
 		virtual void turn_on_gyro(); //turn on the sensor
@@ -61,5 +62,9 @@ class L3GD20H: public InertialSensor {
 		float _sc_fact;		//scale factor
 		uint8_t _chipSelectPin, _DRDY_pin;	//ChipSelectPin and Data Ready pin
 		uint8_t _CTRL1_val; //value of the register, used when powering up and down the sensor
+		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
+		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
+		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
+		uint8_t ch_st (const double val1, const double val2, const double lim1, const double lim2);
 };
 #endif

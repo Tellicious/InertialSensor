@@ -27,6 +27,9 @@ INS_Gyro::INS_Gyro(InertialSensor &sensor, float &meas_x, float &meas_y, float &
 			_sz = - 1;
 			break;
 		case (X_BACK_Z_UP):
+            _x_p = &meas_x;
+            _y_p = &meas_y;
+            _z_p = &meas_z;
 			_sx = - 1;
 			_sy = 1;
 			_sz = - 1;

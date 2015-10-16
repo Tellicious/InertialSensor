@@ -141,6 +141,15 @@ void LSM9DS0::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const u
 	return;
 }
 
+//-----------------Check values for self-test-------------------//
+uint8_t LSM9DS0::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+    if (fabs(lim1) > fabs(lim2)){
+        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
+    }
+    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
+    
+}
+
 //=====================================Constructors==========================================//
 LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM):InertialSensor(){
 	_chipSelectPin_G = CS_pin_G;
@@ -160,10 +169,10 @@ LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM, uint8_t DRDY_pin_G, uint8
 
 //-----------------------Initialization-----------------------//
 void LSM9DS0::init(){
-	digitalWrite(_chipSelectPin_G,HIGH);
-	digitalWrite(_chipSelectPin_XM,HIGH);
 	pinMode(_chipSelectPin_G,OUTPUT);
 	pinMode(_chipSelectPin_XM,OUTPUT);
+	digitalWrite(_chipSelectPin_G,HIGH);
+	digitalWrite(_chipSelectPin_XM,HIGH);
 	if ((_DRDY_pin_G != 0) || (_DRDY_pin_A != 0) || (_DRDY_pin_M != 0)){
 		pinMode(_DRDY_pin_G,INPUT);
 		pinMode(_DRDY_pin_A,INPUT);
@@ -186,6 +195,8 @@ void LSM9DS0::init(){
 //-----------------------Configuration-----------------------//
 uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq){
 	init();
+	// Trash the first reading
+	readRegister(_chipSelectPin_G, LSM9DS0_WHO_AM_I_G);
 	// Check if the device ID is correct
 	if (readRegister(_chipSelectPin_G, LSM9DS0_WHO_AM_I_G) != LSM9DS0_ID_G){
 		return 0;
@@ -244,6 +255,7 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 	//Selected ODR, power on, 3-axis enabled
 	_CTRL1_val_G = (gyro_odr << 4) | (1 << 3) | 0x7;
 	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G, _CTRL1_val_G);
+	delay(200);
 	// Discard the first n measures
 	if(! discard_measures_gyro(LSM9DS0_DISCARDED_MEASURES, LSM9DS0_DISCARD_TIMEOUT)){
 		return 0;
@@ -254,6 +266,7 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 //-------------------------Turn on---------------------------//
 void LSM9DS0::turn_on_gyro(){
 	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G,_CTRL1_val_G);
+	delay(200);
 }
 
 //------------------------Turn off---------------------------//
@@ -337,6 +350,24 @@ void LSM9DS0::HP_reset_gyro(){
 //-----------------------Self-Test-------------------------//
 uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 	uint8_t status = 0;
+	// Discard the first n measures
+	if(!discard_measures_gyro(LSM9DS0_DISCARDED_MEASURES_ST, LSM9DS0_DISCARD_TIMEOUT)){
+		return 0;
+	}
+	// Average n samples
+	float x_pre = 0;
+	float y_pre = 0;
+	float z_pre = 0;
+	for (int ii = 0; ii < LSM9DS0_GYRO_SELF_TEST_MEASURES; ii++){
+		read_gyro_STATUS(LSM9DS0_DISCARD_TIMEOUT);
+		x_pre += gx;
+		y_pre += gy;
+		z_pre += gz;
+	}
+	x_pre /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
+	y_pre /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
+	z_pre /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
+	// Turn on self-test
 	turn_off_gyro();
 	uint8_t CTRL4_val = readRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G);
 	if (mode == 0){
@@ -351,23 +382,41 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 	if( ! discard_measures_gyro(LSM9DS0_DISCARDED_MEASURES_ST, LSM9DS0_DISCARD_TIMEOUT)){
 		return 0;
 	}
-	read_gyro_STATUS(LSM9DS0_DISCARD_TIMEOUT);
+	// Average n samples
+	float x_post = 0;
+	float y_post = 0;
+	float z_post = 0;
+	for (int ii = 0; ii < LSM9DS0_GYRO_SELF_TEST_MEASURES; ii++){
+		read_gyro_STATUS(LSM9DS0_DISCARD_TIMEOUT);
+		x_post += gx;
+		y_post += gy;
+		z_post += gz;
+	}
+	x_post /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
+	y_post /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
+	z_post /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
 	// Define threshold based on the Full-Scale value
-	float thrs;
+	float thrs_min, thrs_max;
 	if ((_sc_fact_g - 8.75e-3 * INS_TORAD) < 1e-5){
-		thrs = 20 * INS_TORAD; 
+		thrs_min = 20.0 * INS_TORAD;
+		thrs_max = 250.0 * INS_TORAD;
 	}
 	else if ((_sc_fact_g - 17.5e-3 * INS_TORAD) < 1e-5){
-		thrs = 70 * INS_TORAD;
+		thrs_min = 70.0 * INS_TORAD;
+		thrs_max = 400.0 * INS_TORAD;
 	}
 	else if ((_sc_fact_g - 70e-3 * INS_TORAD) < 1e-5){
-		thrs = 150 * INS_TORAD;
+		thrs_min = 150.0 * INS_TORAD;
+		thrs_max = 1000.0 * INS_TORAD;
 	}
 	else {
 		return 0;
 	}
+	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
+		status = 1;
+	}
 	// Check if values are bigger than the threshold
-	if (mode == 0){
+	/*if (mode == 0){
 		if ((gx > thrs) && (gy < - thrs) && (gz < - thrs)){
 			status = 1;
 		}
@@ -376,7 +425,7 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 		if ((gx < - thrs) && (gy > thrs) && (gz > thrs)){
 			status = 1;
 		}
-	}
+	}*/
 	turn_off_gyro();
 	CTRL4_val &= 0xF9; // Removes Self-Test
 	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G, CTRL4_val);
@@ -418,6 +467,8 @@ uint8_t LSM9DS0::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 //-----------------------Configuration-----------------------//
 uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_t accel_bw, uint8_t mag_range, uint8_t mag_odr,uint8_t HP_accel_enable){
 	init();
+	// Trash the first reading
+	readRegister(_chipSelectPin_XM, LSM9DS0_WHO_AM_I_XM);
 	// Check if the device ID is correct
 	if (readRegister(_chipSelectPin_XM, LSM9DS0_WHO_AM_I_XM) != LSM9DS0_ID_XM){
 		return 0;
@@ -508,6 +559,7 @@ uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_
 	// Set selected ODR (accelerometer), continuous update, turn on the accelerometer
 	_CTRL1_val_XM = (accel_odr << 4) | 0x7;
 	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG1_XM, _CTRL1_val_XM);
+	delay(200);
 	// Discard the first n measures
 	if(! discard_measures_accel(LSM9DS0_DISCARDED_MEASURES, LSM9DS0_DISCARD_TIMEOUT)){
 		return 0;
@@ -523,6 +575,7 @@ uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_
 //----------------Turn on accelerometer----------------//
 void LSM9DS0::turn_on_accel(){
 	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG1_XM, _CTRL1_val_XM);
+	delay(200);
 }
 
 //----------------Turn off accelerometer---------------//
@@ -595,18 +648,18 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 		return 0;
 	}
 	// Average n samples
-	float ax_pre = 0;
-	float ay_pre = 0;
-	float az_pre = 0;
+	float x_pre = 0;
+	float y_pre = 0;
+	float z_pre = 0;
 	for (int ii = 0; ii < LSM9DS0_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(LSM9DS0_DISCARD_TIMEOUT);
-		ax_pre += ax;
-		ay_pre += ay;
-		az_pre += az;
+		x_pre += ax;
+		y_pre += ay;
+		z_pre += az;
 	}
-	ax_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
-	ay_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
-	az_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
+	x_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
+	y_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
+	z_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
 	// Turn off the sensor and setup self-test
 	turn_off_accel();
 	uint8_t CTRL2_val = readRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM);
@@ -623,45 +676,48 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 		return 0;
 	}
 	// Average n samples
-	float ax_post = 0;
-	float ay_post = 0;
-	float az_post = 0;
+	float x_post = 0;
+	float y_post = 0;
+	float z_post = 0;
 	for (int ii = 0; ii < LSM9DS0_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(LSM9DS0_DISCARD_TIMEOUT);
-		ax_post += ax;
-		ay_post += ay;
-		az_post += az;
+		x_post += ax;
+		y_post += ay;
+		z_post += az;
 	}
-	ax_post /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
-	ay_post /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
-	az_post /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
+	x_post /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
+	y_post /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
+	z_post /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
 	// Define Threshold based on the Full-Scale value
-	float thrs_xy, thrs_z;
+	float thrs_min, thrs_max;
 	if ((_sc_fact_a - INS_G_VAL * 0.00006103515625) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
+		thrs_min = 60e-3 * INS_G_VAL;
+		thrs_max = 1700e-3 * INS_G_VAL;
 	}
 	else if ((_sc_fact_a - INS_G_VAL * 0.0001220703125) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
+		thrs_min = 60e-3 * INS_G_VAL;
+		thrs_max = 1700e-3 * INS_G_VAL;
 	}
 	else if ((_sc_fact_a - INS_G_VAL * 0.00018310546875) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
+		thrs_min = 60e-3 * INS_G_VAL;
+		thrs_max = 1700e-3 * INS_G_VAL;
 	}
 	else if ((_sc_fact_a - INS_G_VAL * 0.000244140625) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
+		thrs_min = 60e-3 * INS_G_VAL;
+		thrs_max = 1700e-3 * INS_G_VAL;
 	}
 	else if ((_sc_fact_a - INS_G_VAL * 0.000732421875) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
+		thrs_min = 60e-3 * INS_G_VAL;
+		thrs_max = 1700e-3 * INS_G_VAL;
 	}
 	else {
 		return 0;
 	}
 	// Check if values are bigger than the threshold
-	if (mode == 0){
+	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
+		status = 1;
+	}
+	/*if (mode == 0){
 		if (((ax_post - ax_pre) > thrs_xy) && ((ay_post - ay_pre) > thrs_xy) && ((az_post - az_pre) > thrs_z)){
 			status = 1;
 		}
@@ -670,7 +726,7 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 		if (((ax_post - ax_pre) < - thrs_xy) && ((ay_post - ay_pre) < - thrs_xy) && ((az_post - az_pre) < - thrs_z)){
 			status = 1;
 		}
-	}
+	}*/
 	turn_off_accel();
 	CTRL2_val &= 0xF9; // Removes Self-Test
 	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM, CTRL2_val);
@@ -712,6 +768,7 @@ uint8_t LSM9DS0::discard_measures_accel(uint8_t number_of_measures, uint32_t tim
 //-----------------Turn on magnetometer----------------//
 void LSM9DS0::turn_on_mag(){
 	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG7_XM, _CTRL7_val_XM);
+	delay(200);
 }
 
 //-----------------Turn off magnetometer---------------//
@@ -785,7 +842,7 @@ uint8_t LSM9DS0::discard_measures_mag(uint8_t number_of_measures, uint32_t timeo
 	return 1;
 }
 
-//============================ =Public Members Temperature====================================//
+//=============================Public Members Temperature====================================//
 //------------------------Read data----------------------//
 uint8_t LSM9DS0::read_raw_thermo(){
 	uint8_t buffer[2];

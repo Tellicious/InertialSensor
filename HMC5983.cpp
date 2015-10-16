@@ -68,6 +68,15 @@ void HMC5983::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const u
 	return;
 }
 
+//-----------------Check values for self-test-------------------//
+uint8_t HMC5983::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+    if (fabs(lim1) > fabs(lim2)){
+        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
+    }
+    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
+    
+}
+
 //=====================================Constructors==========================================//
 HMC5983::HMC5983 (uint8_t CS_pin):InertialSensor(){
 	_chipSelectPin = CS_pin;
@@ -80,8 +89,8 @@ HMC5983::HMC5983 (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(){
 }
 
 void HMC5983::init(){
-	digitalWrite(_chipSelectPin,HIGH);
 	pinMode(_chipSelectPin,OUTPUT);
+    digitalWrite(_chipSelectPin,HIGH);
 	if (_DRDY_pin != 0){
 		pinMode(_DRDY_pin,INPUT);
 	}
@@ -95,18 +104,20 @@ void HMC5983::init(){
 //-----------------------Configuration-----------------------//
 uint8_t HMC5983::config_mag(uint8_t range_conf, uint8_t odr_conf, uint8_t average_conf, uint8_t meas_mode){
 	init();
+	// Trash the first reading 
+	readRegister(_chipSelectPin, HMC5983_ID_REG_A);
 	// Check if the device ID is correct
 	if ((readRegister(_chipSelectPin, HMC5983_ID_REG_A) != HMC5983_ID_A) || (readRegister(_chipSelectPin, HMC5983_ID_REG_B) != HMC5983_ID_B) || (readRegister(_chipSelectPin, HMC5983_ID_REG_C) != HMC5983_ID_C)){
 		return 0;
 	}
-
+	//
 	//Temp. sensor enabled, selected average number, selected ODR, normal measurement mode
 	uint8_t CFG_A_val = 0x80 | average_conf | odr_conf;
 	writeRegister(_chipSelectPin, HMC5983_CFG_A, CFG_A_val);
-
+	//
 	//Selected range
 	writeRegister(_chipSelectPin, HMC5983_CFG_B, range_conf);
-
+	//
 	switch (range_conf){
 		case (HMC5983_RANGE_0_88):
 			_sc_fact = 0.73e-3;
@@ -135,11 +146,12 @@ uint8_t HMC5983::config_mag(uint8_t range_conf, uint8_t odr_conf, uint8_t averag
 		default:
 			return 2;
 	}
-
+	//
 	// 4 wire SPI, selected measurement mode
 	_MODE_val = meas_mode;
 	writeRegister(_chipSelectPin, HMC5983_MODE, _MODE_val);
-
+	//
+	delay(50);
 	// Discard the first n measures
 	if(! discard_measures_mag(HMC5983_DISCARDED_MEASURES, HMC5983_DISCARD_TIMEOUT)){
 		return 0;
@@ -150,6 +162,7 @@ uint8_t HMC5983::config_mag(uint8_t range_conf, uint8_t odr_conf, uint8_t averag
 //-------------------------Turn on---------------------------//
 void HMC5983::turn_on_mag(){
 	writeRegister(_chipSelectPin, HMC5983_MODE, _MODE_val);
+	delay(50);
 }
 
 //------------------------Turn off---------------------------//
@@ -221,6 +234,7 @@ uint8_t HMC5983::read_mag_single_STATUS(uint32_t timeout){
 //-----------------------Self-Test-------------------------//
 uint8_t HMC5983::self_test_mag(uint8_t mode){
 	uint8_t status = 0;
+	// turn off mag and turn on self test
 	turn_off_mag();
 	uint8_t CFG_A_val = readRegister(_chipSelectPin, HMC5983_CFG_A);
 	if (mode==0){ //positive bias
@@ -231,14 +245,20 @@ uint8_t HMC5983::self_test_mag(uint8_t mode){
 	}
 	// put into continuous measurement mode
 	writeRegister(_chipSelectPin, HMC5983_MODE, (_MODE_val & 0xFC));
+	delay(50);
 	// Discard the first n measures 
-	if(!discard_measures_mag(HMC5983_DISCARDED_MEASURES_ST, HMC5983_DISCARD_TIMEOUT)){
+	if(! discard_measures_mag(HMC5983_DISCARDED_MEASURES_ST, HMC5983_DISCARD_TIMEOUT)){
 		return 0;
 	}
 	read_mag_STATUS(HMC5983_DISCARD_TIMEOUT);
-	// Define Threshold based on datasheet (quite high...it could be between 0.7 and 1.5)
-	float thrs = 1;
+	// define threshold as Gauss
+	float thrs_min = 0.623076923076923;
+	float thrs_max = 1.474358974358974;
+	if (ch_st(0, x, thrs_min, thrs_max) && ch_st(0, y, thrs_min, thrs_max) && ch_st(0, z, thrs_min, thrs_max)) {
+		status = 1;
+	}
 	// Check if values are bigger than the threshold
+	/*
 	if (mode == 0){
 		if ((x > thrs) && (y > thrs) && (z > thrs)){
 			status = 1;
@@ -249,6 +269,7 @@ uint8_t HMC5983::self_test_mag(uint8_t mode){
 			status = 1;
 		}
 	}
+	*/
 	turn_off_mag();
 	//remove self test
 	writeRegister(_chipSelectPin, HMC5983_CFG_A, CFG_A_val);
@@ -315,7 +336,7 @@ uint8_t HMC5983::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, HMC5983_STATUS);
-		if ((STATUS_val & 0x1) == 0x1){
+		if ((STATUS_val & 0x01) == 0x01){
 			read_raw_thermo();
 			return 1;
 		}

@@ -45,7 +45,7 @@
 
 //==================================Auxiliary Functions========================================//
 //---------------Read one register from the SPI-----------------//
-uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
+uint8_t L3GD20H::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
   uint8_t inByte = 0;           	// incoming byte
   thisRegister |= L3GD20H_READ;		// register in read mode
   digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
@@ -56,7 +56,7 @@ uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
 }
 
 //------------Read multiple registers from the SPI--------------//
-void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister) {
+void L3GD20H::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister) {
   startRegister |= (L3GD20H_READ | L3GD20H_MULT);// register in multiple read mode
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
   	SPI.transfer(startRegister);		// send the command to read thisRegister
@@ -68,13 +68,21 @@ void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t numbe
 }
 
 //---------------Write one register on the SPI-----------------//
-void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
+void L3GD20H::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
   digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
   SPI.transfer(thisRegister); 		// send register location
   SPI.transfer(thisValue);  		// send value to record into register
   digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
 }
 
+//-----------------Check values for self-test-------------------//
+uint8_t L3GD20H::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+    if (fabs(lim1) > fabs(lim2)){
+        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
+    }
+    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
+    
+}
 //=====================================Constructors==========================================//
 L3GD20H::L3GD20H (uint8_t CS_pin):InertialSensor(){
 	_chipSelectPin = CS_pin;
@@ -87,10 +95,10 @@ L3GD20H::L3GD20H (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(){
 }
 
 void L3GD20H::init(){
-	digitalWrite(_chipSelectPin,HIGH);
 	pinMode(_chipSelectPin,OUTPUT);
+	digitalWrite(_chipSelectPin, HIGH);
 	if (_DRDY_pin != 0){
-		pinMode(_DRDY_pin,INPUT);
+		pinMode(_DRDY_pin, INPUT);
 	}
 	x = 0;
 	y = 0;
@@ -101,8 +109,10 @@ void L3GD20H::init(){
 //-----------------------Configuration-----------------------//
 uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq){
 	init();
+	// Trash the first reading
+	readRegister(_chipSelectPin, L3GD20H_WHO_AM_I);
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin, L3GD20H_WHO_AM_I)!=L3GD20H_ID){
+	if (readRegister(_chipSelectPin, L3GD20H_WHO_AM_I) != L3GD20H_ID){
 		return 0;
 	}
 	//DRDY/INT2 active high, SPI only, selected ODR
@@ -160,7 +170,7 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 	//selected ODR, power on, 3-axis enabled
 	_CTRL1_val = ((odr_conf & 0xF) << 4) | (1 << 3) | 0x7;
 	writeRegister(_chipSelectPin, L3GD20H_CTRL1,_CTRL1_val);
-	//Clear the reference registers
+	delay(100);
 	// Discard the first n measures
 	if(! discard_measures_gyro(L3GD20H_DISCARDED_MEASURES,L3GD20H_DISCARD_TIMEOUT)){
 		return 0;
@@ -171,6 +181,7 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 //-------------------------Turn on---------------------------//
 void L3GD20H::turn_on_gyro(){
 	writeRegister(_chipSelectPin, L3GD20H_CTRL1,_CTRL1_val);
+	delay(100);
 }
 
 //------------------------Turn off---------------------------//
@@ -187,9 +198,9 @@ void L3GD20H::sleep_gyro(){
 uint8_t L3GD20H::read_raw_gyro(){
 	uint8_t buffer[6];
   	readMultipleRegisters(_chipSelectPin, buffer, 6, L3GD20H_OUT_X_L);
-  	x= (float) 	(((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact);
-  	y= (float)	(((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact);
-  	z= (float)	(((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact);
+  	x = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact);
+  	y = (float)	(((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact);
+  	z = (float)	(((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact);
   	return 1;
 }
 
@@ -254,6 +265,24 @@ void L3GD20H::HP_reset_gyro(){
 //-----------------------Self-Test-------------------------//
 uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 	uint8_t status = 0;
+	// Discard the first n measures
+	if(!discard_measures_gyro(L3GD20H_DISCARDED_MEASURES_ST, L3GD20H_DISCARD_TIMEOUT)){
+		return 0;
+	}
+	// Average n samples
+	float x_pre = 0;
+	float y_pre = 0;
+	float z_pre = 0;
+	for (int ii = 0; ii < L3GD20H_GYRO_SELF_TEST_MEASURES; ii++){
+		read_gyro_STATUS(L3GD20H_DISCARD_TIMEOUT);
+		x_pre += x;
+		y_pre += y;
+		z_pre += z;
+	}
+	x_pre /= L3GD20H_GYRO_SELF_TEST_MEASURES;
+	y_pre /= L3GD20H_GYRO_SELF_TEST_MEASURES;
+	z_pre /= L3GD20H_GYRO_SELF_TEST_MEASURES;
+	// Turn on self-test
 	turn_off_gyro();
 	uint8_t CTRL4_val = readRegister(_chipSelectPin, L3GD20H_CTRL4);
 	if (mode == 0){
@@ -268,7 +297,19 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 	if(!discard_measures_gyro(L3GD20H_DISCARDED_MEASURES_ST, L3GD20H_DISCARD_TIMEOUT)){
 		return 0;
 	}
-	read_gyro_STATUS(L3GD20H_DISCARD_TIMEOUT);
+	// Average n samples
+	float x_post = 0;
+	float y_post = 0;
+	float z_post = 0;
+	for (int ii = 0; ii < L3GD20H_GYRO_SELF_TEST_MEASURES; ii++){
+		read_gyro_STATUS(L3GD20H_DISCARD_TIMEOUT);
+		x_post += x;
+		y_post += y;
+		z_post += z;
+	}
+	x_post /= L3GD20H_GYRO_SELF_TEST_MEASURES;
+	y_post /= L3GD20H_GYRO_SELF_TEST_MEASURES;
+	z_post /= L3GD20H_GYRO_SELF_TEST_MEASURES;
 	// Define Threshold based on the Full-Scale value
 	float thrs;
 	if ((_sc_fact - 8.75e-3 * INS_TORAD) < 1e-5){
@@ -284,6 +325,10 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 		return 0;
 	}
 	// Check if values are bigger than the threshold
+	if (ch_st(x_pre, x_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(y_pre, y_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(z_pre, z_post, (0.6 * thrs), (1.4 * thrs))) {
+		status = 1;
+	}
+	/*
 	if (mode == 0){
 		if ((x > thrs) && (y < - thrs) && (z > thrs)){
 			status = 1;
@@ -294,6 +339,7 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 			status = 1;
 		}
 	}
+	*/
 	turn_off_gyro();
 	CTRL4_val &= 0xF9; // Remove Self-Test
 	writeRegister(_chipSelectPin, L3GD20H_CTRL4, CTRL4_val);
