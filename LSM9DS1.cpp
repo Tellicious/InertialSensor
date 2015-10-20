@@ -266,7 +266,7 @@ uint8_t LSM9DS1::config_accel_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t
 		CTRL7_val_XL = (1 << 7) | (1 << 2) | 0x01 | HP_freq_accel;
 	}
 	else {
-		CTRL7_val_XL = (1 << 7);
+		CTRL7_val_XL = 0x00;
 	}
 	writeRegister(_chipSelectPin_XG, LSM9DS1_CTRL_REG7_XL, CTRL7_val_XL);
 	// selected accelerometer ODR, range and auto anti-aliasing
