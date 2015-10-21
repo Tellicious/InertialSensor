@@ -11,14 +11,18 @@
 #define LIS3MDL_DISCARD_TIMEOUT			2e6 //timeout time in us between measures when discarding
 //=======================================ODR Values==============================================//
 // CTRL_REG1
-#define LIS3MDL_ODR_0_625	0x00
-#define LIS3MDL_ODR_1_25	0x04
-#define LIS3MDL_ODR_2_5		0x08
-#define LIS3MDL_ODR_5		0x0C
-#define LIS3MDL_ODR_10		0x10
-#define LIS3MDL_ODR_20		0x14
-#define LIS3MDL_ODR_40		0x18
-#define LIS3MDL_ODR_80		0x1C
+#define LIS3MDL_ODR_0_625	0x60
+#define LIS3MDL_ODR_1_25	0x64
+#define LIS3MDL_ODR_2_5		0x68
+#define LIS3MDL_ODR_5		0x6C
+#define LIS3MDL_ODR_10		0x70
+#define LIS3MDL_ODR_20		0x74
+#define LIS3MDL_ODR_40		0x78
+#define LIS3MDL_ODR_80		0x7C
+#define LIS3MDL_ODR_155		0x62
+#define LIS3MDL_ODR_300		0x42
+#define LIS3MDL_ODR_560		0x22
+#define LIS3MDL_ODR_1000	0x02
 //=====================================Range Values Mag==============================================//
 // CTRL_REG2
 #define LIS3MDL_RANGE_4		0x00
