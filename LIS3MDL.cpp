@@ -138,8 +138,8 @@ uint8_t LIS3MDL::config_mag(uint8_t range_conf, uint8_t odr_conf){
 	uint8_t CTRL4_val = (1 << 3) | (1 << 2);
 	writeRegister(_chipSelectPin, LIS3MDL_CTRL4, CTRL4_val);
 	//
-	//temperature enable, ultra-high perfomance mode, selected ODR, no self test
-	uint8_t CTRL1_val = (1 << 7) | (1 << 6) | (1 << 5) | odr_conf;
+	//temperature enable, selected perfomance mode, selected ODR, no self test
+	uint8_t CTRL1_val = (1 << 7) | odr_conf;
 	writeRegister(_chipSelectPin, LIS3MDL_CTRL1, CTRL1_val);
 	//
 	//power on, SPI 4 wire, Continuous conversion mode
