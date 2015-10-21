@@ -11,6 +11,12 @@
 #include <SPI.h>
 
 //====================================Registers Addresses=========================================// 
+#define LIS3MDL_OFFSET_X_REG_L	0x05
+#define LIS3MDL_OFFSET_X_REG_H	0x06
+#define LIS3MDL_OFFSET_Y_REG_L	0x07
+#define LIS3MDL_OFFSET_Y_REG_H	0x08
+#define LIS3MDL_OFFSET_Z_REG_L	0x09
+#define LIS3MDL_OFFSET_Z_REG_H	0x0A
 #define LIS3MDL_WHO_AM_I	0x0F
 #define LIS3MDL_CTRL1		0x20
 #define LIS3MDL_CTRL2		0x21
@@ -134,13 +140,21 @@ uint8_t LIS3MDL::config_mag(uint8_t range_conf, uint8_t odr_conf){
 	uint8_t CTRL5_val = 0x00;
 	writeRegister(_chipSelectPin, LIS3MDL_CTRL5, CTRL5_val);
 	//
-	//Z-axis on ultra-high performance mode, little endian
-	uint8_t CTRL4_val = (1 << 3) | (1 << 2);
+	//Z-axis on selected performance mode, little endian
+	uint8_t CTRL4_val = ((odr_conf & 0x60) >> 3);
 	writeRegister(_chipSelectPin, LIS3MDL_CTRL4, CTRL4_val);
 	//
 	//temperature enable, selected perfomance mode, selected ODR, no self test
 	uint8_t CTRL1_val = (1 << 7) | odr_conf;
 	writeRegister(_chipSelectPin, LIS3MDL_CTRL1, CTRL1_val);
+	//
+	// clearing offset registers
+	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_X_REG_L, 0x00);
+	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_X_REG_H, 0x00);
+	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Y_REG_L, 0x00);
+	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Y_REG_H, 0x00);
+	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Z_REG_L, 0x00);
+	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Z_REG_H, 0x00);
 	//
 	//power on, SPI 4 wire, Continuous conversion mode
 	uint8_t _CTRL3_val = 0x00;
@@ -169,8 +183,8 @@ uint8_t LIS3MDL::read_raw_mag(){
 	uint8_t buffer[6];
   	readMultipleRegisters(_chipSelectPin, buffer, 6, LIS3MDL_OUT_XL);
   	x = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact);
-  	y = (float)	(((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact);
-  	z = (float)	(((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact);
+  	y = (float) (((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact);
+  	z = (float) (((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact);
   	return 1;
 }
 
