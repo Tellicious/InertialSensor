@@ -15,7 +15,7 @@ INS_Accel::INS_Accel(InertialSensor &sensor, float &meas_x, float &meas_y, float
 			_y_p = &meas_y;
 			_z_p = &meas_z;
 			_sx = 1;
-			_sy = -1;
+			_sy = - 1;
 			_sz = - 1;
 			break;
 		case (X_LEFT_Z_UP):
@@ -72,6 +72,70 @@ INS_Accel::INS_Accel(InertialSensor &sensor, float &meas_x, float &meas_y, float
 			_z_p = &meas_z;
 			_sx = - 1;
 			_sy = 1;
+			_sz = 1;
+			break;
+		case (X_FRONT_Z_UP_LH):
+			_x_p = &meas_x;
+			_y_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = 1;
+			_sy = 1;
+			_sz = - 1;
+			break;
+		case (X_LEFT_Z_UP_LH):
+			_y_p = &meas_x;
+			_x_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = - 1;
+			_sy = 1;
+			_sz = - 1;
+			break;
+		case (X_BACK_Z_UP_LH):
+            _x_p = &meas_x;
+            _y_p = &meas_y;
+            _z_p = &meas_z;
+			_sx = - 1;
+			_sy = - 1;
+			_sz = - 1;
+			break;
+		case (X_RIGHT_Z_UP_LH):
+			_y_p = &meas_x;
+			_x_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = 1;
+			_sy = - 1;
+			_sz = - 1;
+			break;
+		case (X_FRONT_Z_DOWN_LH):
+			_x_p = &meas_x;
+			_y_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = 1;
+			_sy = - 1;
+			_sz = 1;
+			break;
+		case (X_LEFT_Z_DOWN_LH):
+			_y_p = &meas_x;
+			_x_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = 1;
+			_sy = 1;
+			_sz = 1;
+			break;
+		case (X_BACK_Z_DOWN_LH):
+			_x_p = &meas_x;
+			_y_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = - 1;
+			_sy = 1;
+			_sz = 1;
+			break;
+		case (X_RIGHT_Z_DOWN_LH):
+			_y_p = &meas_x;
+			_x_p = &meas_y;
+			_z_p = &meas_z;
+			_sx = - 1;
+			_sy = - 1;
 			_sz = 1;
 			break;
 		default:

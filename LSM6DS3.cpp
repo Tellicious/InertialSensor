@@ -183,6 +183,7 @@ uint8_t LSM6DS3::config_accel_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t
 	//
 	// Check if the device ID is correct
 	if (readRegister(_chipSelectPin, LSM6DS3_WHO_AM_I) != LSM6DS3_ID){
+		delay(50);
 		return 0;
 	}
 	// Disable access to embedded functions

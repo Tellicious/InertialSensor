@@ -12,20 +12,20 @@
 #define LSM9DS0_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
 //======================================ODR Values Gyro=============================================//
 // 4 LSB values: CTRL1_G as DR 1:0 and BW 1:0
-#define LSM9DS0_ODR_G_95_C0_12_5	0x00
-#define LSM9DS0_ODR_G_95_C0_25		0x03
-#define LSM9DS0_ODR_G_190_C0_12_5	0x04
-#define LSM9DS0_ODR_G_190_C0_25		0x05
-#define LSM9DS0_ODR_G_190_C0_50		0x06
-#define LSM9DS0_ODR_G_190_C0_70		0x07
-#define LSM9DS0_ODR_G_380_C0_20		0x08
-#define LSM9DS0_ODR_G_380_C0_25		0x09
-#define LSM9DS0_ODR_G_380_C0_50		0x0A
-#define LSM9DS0_ODR_G_380_C0_100	0x0B
-#define LSM9DS0_ODR_G_760_C0_30		0x0C
-#define LSM9DS0_ODR_G_760_C0_35		0x0D
-#define LSM9DS0_ODR_G_760_C0_50		0x0E
-#define LSM9DS0_ODR_G_760_C0_100	0x0F
+#define LSM9DS0_ODR_G_95_CO_12_5	0x00
+#define LSM9DS0_ODR_G_95_CO_25		0x03
+#define LSM9DS0_ODR_G_190_CO_12_5	0x04
+#define LSM9DS0_ODR_G_190_CO_25		0x05
+#define LSM9DS0_ODR_G_190_CO_50		0x06
+#define LSM9DS0_ODR_G_190_CO_70		0x07
+#define LSM9DS0_ODR_G_380_CO_20		0x08
+#define LSM9DS0_ODR_G_380_CO_25		0x09
+#define LSM9DS0_ODR_G_380_CO_50		0x0A
+#define LSM9DS0_ODR_G_380_CO_100	0x0B
+#define LSM9DS0_ODR_G_760_CO_30		0x0C
+#define LSM9DS0_ODR_G_760_CO_35		0x0D
+#define LSM9DS0_ODR_G_760_CO_50		0x0E
+#define LSM9DS0_ODR_G_760_CO_100	0x0F
 //====================================Range Values Gyro==============================================//
 #define LSM9DS0_RANGE_G_245			0x00
 #define LSM9DS0_RANGE_G_500			0x10

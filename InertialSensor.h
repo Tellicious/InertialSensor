@@ -21,6 +21,14 @@ typedef enum{
 	X_LEFT_Z_DOWN,
 	X_BACK_Z_DOWN,
 	X_RIGHT_Z_DOWN,
+	X_FRONT_Z_UP_LH,
+	X_LEFT_Z_UP_LH,
+	X_BACK_Z_UP_LH,
+	X_RIGHT_Z_UP_LH,
+	X_FRONT_Z_DOWN_LH,
+	X_LEFT_Z_DOWN_LH,
+	X_BACK_Z_DOWN_LH,
+	X_RIGHT_Z_DOWN_LH
 } INS_orientation;
 
 class InertialSensor{
