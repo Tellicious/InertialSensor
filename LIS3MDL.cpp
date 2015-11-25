@@ -56,13 +56,13 @@ uint8_t LIS3MDL::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
 //------------Read multiple registers from the SPI--------------//
 void LIS3MDL::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister) {
   startRegister |= (LIS3MDL_READ | LIS3MDL_MULT);// register in multiple read mode
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  	SPI.transfer(startRegister);		// send the command to read thisRegister
-  	for (uint8_t ii = 0; ii < number_of_registers; ii++){
-  		buffer[ii] = SPI.transfer(0x00);
-  	}
-  	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-  	return;
+  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
+  SPI.transfer(startRegister);		// send the command to read thisRegister
+  while (number_of_registers--){
+  	*buffer++ = SPI.transfer(0x00);
+  }
+  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
+  return;
 }
 
 //---------------Write one register on the SPI-----------------//
