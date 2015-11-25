@@ -117,8 +117,8 @@ void LSM6DS3::readMultipleRegisters(uint8_t chipSelectPin, uint8_t * buffer, uin
 	startRegister |= (LSM6DS3_READ);// register in multiple read mode
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
 	SPI.transfer(startRegister);		// send the command to read thisRegister
-	for (uint8_t ii = 0; ii < number_of_registers; ii++){
-		buffer[ii] = SPI.transfer(0x00);
+	while (number_of_registers--){
+		*buffer++ = SPI.transfer(0x00);
 	}
 	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
 	return;
