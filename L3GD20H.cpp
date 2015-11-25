@@ -60,8 +60,8 @@ void L3GD20H::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint
   startRegister |= (L3GD20H_READ | L3GD20H_MULT);// register in multiple read mode
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
   	SPI.transfer(startRegister);		// send the command to read thisRegister
-  	for (uint8_t ii = 0; ii < number_of_registers; ii++){
-  		buffer[ii] = SPI.transfer(0x00);
+  	while (number_of_registers--){
+  		*buffer++ = SPI.transfer(0x00);
   	}
   	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
   	return;
