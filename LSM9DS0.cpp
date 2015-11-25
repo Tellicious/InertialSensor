@@ -117,27 +117,21 @@ uint8_t LSM9DS0::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
 //------------Read multiple registers from the SPI--------------//
 void LSM9DS0::readMultipleRegisters(uint8_t chipSelectPin, uint8_t * buffer, uint8_t number_of_registers, uint8_t startRegister) {
 	startRegister |= (LSM9DS0_READ | LSM9DS0_MULT);// register in multiple read mode
-	//uint8_t oldSPCR = SPCR;				// actual SPI configuration register
-	//SPCR = _mySPCR;						// set the desired SPCR
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
 	SPI.transfer(startRegister);		// send the command to read thisRegister
-	for (uint8_t ii = 0; ii < number_of_registers; ii++){
-		buffer[ii] = SPI.transfer(0x00);
+	while (number_of_registers--){
+		*buffer++ = SPI.transfer(0x00);
 	}
 	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	//SPCR = oldSPCR;						// restores the old SPCR
 	return;
 }
 
 //---------------Write one register on the SPI-----------------//
 void LSM9DS0::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
-	//uint8_t oldSPCR = SPCR;				// actual SPI configuration register
-	//SPCR = _mySPCR;						// set the desired SPCR
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
 	SPI.transfer(thisRegister); 		// send register location
 	SPI.transfer(thisValue); 		// send value to record into register
 	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	//SPCR = oldSPCR;						// restores the old SPCR
 	return;
 }
 
