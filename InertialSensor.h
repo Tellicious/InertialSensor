@@ -72,6 +72,9 @@ class InertialSensor{
 #include "HMC5983.h"
 #include "LIS3MDL.h"
 #include "LPS25HB.h"
+#include "BMP180.h"
+#include "BMP280.h"
+#include "ADXL345.h"
 //==================Include Generic Libraries==================//
 #include "INS_Gyro.h"
 #include "INS_Accel.h"

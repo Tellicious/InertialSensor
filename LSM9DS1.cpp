@@ -445,13 +445,13 @@ uint8_t LSM9DS1::self_test_gyro(){
 	// Define threshold based on the Full-Scale value
 	float thrs;
 	if ((_sc_fact_g - 8.75e-3 * INS_TORAD) < 1e-5){
-		thrs = 20 * INS_TORAD; 
+		thrs = 95 * INS_TORAD; 
 	}
 	else if ((_sc_fact_g - 17.5e-3 * INS_TORAD) < 1e-5){
-		thrs = 70 * INS_TORAD;
+		thrs = 190 * INS_TORAD;
 	}
 	else if ((_sc_fact_g - 70e-3 * INS_TORAD) < 1e-5){
-		thrs = 150 * INS_TORAD;
+		thrs = 380 * INS_TORAD;
 	}
 	else {
 		return 0;
@@ -460,9 +460,6 @@ uint8_t LSM9DS1::self_test_gyro(){
 	if (ch_st(x_pre, x_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(y_pre, y_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(z_pre, z_post, (0.6 * thrs), (1.4 * thrs))) {
 		status = 1;
 	}
-	/*if ((gx > thrs) && (gy < - thrs) && (gz < - thrs)){
-		status = 1;
-	}*/
 	turn_off_gyro();
 	writeRegister(_chipSelectPin_XG, LSM9DS1_CTRL_REG10, CTRL10_val);
 	turn_on_gyro();
@@ -594,54 +591,12 @@ uint8_t LSM9DS1::self_test_accel(){
 	y_post /= LSM9DS1_ACCEL_SELF_TEST_MEASURES;
 	z_post /= LSM9DS1_ACCEL_SELF_TEST_MEASURES;
 	// Define Threshold based on the Full-Scale value
-	// Define Threshold based on the Full-Scale value
-	float thrs_min, thrs_max;
-	if ((_sc_fact_a - INS_G_VAL * 0.00006103515625) < 1e-5){
-		thrs_min = 60e-3 * INS_G_VAL;
-		thrs_max = 1700e-3 * INS_G_VAL;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.0001220703125) < 1e-5){
-		thrs_min = 60e-3 * INS_G_VAL;
-		thrs_max = 1700e-3 * INS_G_VAL;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.000244140625) < 1e-5){
-		thrs_min = 60e-3 * INS_G_VAL;
-		thrs_max = 1700e-3 * INS_G_VAL;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.000732421875) < 1e-5){
-		thrs_min = 60e-3 * INS_G_VAL;
-		thrs_max = 1700e-3 * INS_G_VAL;
-	}
-	else {
-		return 0;
-	}
-	/*float thrs_xy, thrs_z;
-	if ((_sc_fact_a - INS_G_VAL * 0.00006103515625) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.0001220703125) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.000244140625) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.000732421875) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else {
-		return 0;
-	}*/
+	float thrs_min = 60e-3 * INS_G_VAL;
+	float thrs_max = 1700e-3 * INS_G_VAL;
 	// Check if values are bigger than the threshold
 	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
 	}
-	/*if (((ax_post - ax_pre) > thrs_xy) && ((ay_post - ay_pre) > thrs_xy) && ((az_post - az_pre) > thrs_z)){
-		status = 1;
-	}*/
 	turn_off_accel();
 	writeRegister(_chipSelectPin_XG, LSM9DS1_CTRL_REG10, CTRL10_val);
 	turn_on_accel();
@@ -827,14 +782,6 @@ uint8_t LSM9DS1::self_test_mag(){
 	if (ch_st(x_pre, x_post, thrs_xy_min, thrs_xy_max) && ch_st(y_pre, y_post, thrs_xy_min, thrs_xy_max) && ch_st(z_pre, z_post, thrs_z_min, thrs_z_max)) {
 		status = 1;
 	}
-
-	// Define Threshold based on datasheet (quite high...it could be between 1 and 3 (x and y) and between 0.1 and 1 (z))
-	/*float thrs_xy = 2;
-	float thrs_z = 0.5;
-	// Check if values are bigger than the threshold
-	if ((fabs(mx) > thrs_xy) && (fabs(my) > thrs_xy) && (fabs(mz) > thrs_z)){
-		status = 1;
-	}*/
 	turn_off_mag();
 	//remove self test
 	writeRegister(_chipSelectPin_M, LSM9DS1_CTRL_REG1_M, CTRL1_val);

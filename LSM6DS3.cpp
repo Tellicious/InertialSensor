@@ -583,7 +583,7 @@ uint8_t LSM6DS3::self_test_accel(uint8_t mode){
 		CTRL5_val |= 0x01; // Self-test mode 0
 	}
 	else {
-		CTRL5_val |= 0x03; // Self-test mode 1
+		CTRL5_val |= 0x02; // Self-test mode 1
 	}
 	writeRegister(_chipSelectPin, LSM6DS3_CTRL5_C, CTRL5_val);
 	turn_on_accel();
@@ -605,26 +605,6 @@ uint8_t LSM6DS3::self_test_accel(uint8_t mode){
 	y_post /= LSM6DS3_ACCEL_SELF_TEST_MEASURES;
 	z_post /= LSM6DS3_ACCEL_SELF_TEST_MEASURES;
 	// Define Threshold based on the Full-Scale value
-	float thrs_xy, thrs_z;
-	/*if ((_sc_fact_a - INS_G_VAL * 0.00006103515625) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.0001220703125) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.000244140625) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else if ((_sc_fact_a - INS_G_VAL * 0.000732421875) < 1e-5){
-		thrs_xy = 4;
-		thrs_z = 2;
-	}
-	else {
-		return 0;
-	}*/
 	float thrs_min = 60e-3 * INS_G_VAL;
 	float thrs_max = 1700e-3 * INS_G_VAL;
 	// Check if values are bigger than the threshold

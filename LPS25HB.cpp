@@ -99,8 +99,7 @@ uint8_t LPS25HB::config_baro(uint8_t odr_conf, uint8_t AVGT, uint8_t AVGP, uint8
 	// Trash the first reading
 	readRegister(_chipSelectPin, LPS25HB_WHO_AM_I);
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin, LPS25HB_WHO_AM_I)!=LPS25HB_ID){
-		Serial.println(readRegister(_chipSelectPin, LPS25HB_WHO_AM_I),BIN);
+	if (readRegister(_chipSelectPin, LPS25HB_WHO_AM_I)!= LPS25HB_ID){
 		return 0;
 	}
 	//
@@ -155,7 +154,7 @@ void LPS25HB::turn_off_baro(){
 
 //------------------------Read data-------------------------//
 uint8_t LPS25HB::read_raw_baro(){
-	uint8_t buffer[6];
+	uint8_t buffer[3];
   	readMultipleRegisters(_chipSelectPin, buffer, 3, LPS25HB_OUT_XL);
   	press = (float) (((int32_t) (int8_t) buffer[2] << 16 | (uint16_t) buffer[1] << 8 | buffer[0]) * _sc_fact);
   	return 1;
