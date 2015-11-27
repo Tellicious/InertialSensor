@@ -346,7 +346,7 @@ uint8_t LSM9DS1::read_raw_gyro(){
 uint8_t LSM9DS1::read_gyro_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_G) == 1){
+		if (digitalRead(_DRDY_pin_G)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -362,7 +362,7 @@ uint8_t LSM9DS1::read_gyro_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_XG, LSM9DS1_STATUS_REG);
-		if ((STATUS_val & (1 << 1)) == (1 << 1)){
+		if (STATUS_val & (1 << 1)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -487,7 +487,7 @@ uint8_t LSM9DS1::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 	return 1;
 }
 
-//=============================Public Members Accelerometer==================================== //
+//=============================Public Members Accelerometer====================================//
 //----------------Turn on accelerometer----------------//
 void LSM9DS1::turn_on_accel(){
 	turn_on_gyro();
@@ -512,7 +512,7 @@ uint8_t LSM9DS1::read_raw_accel(){
 uint8_t LSM9DS1::read_accel_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_A) == 1){
+		if (digitalRead(_DRDY_pin_A)){
 			read_raw_accel();
 			return 1;
 		}
@@ -528,7 +528,7 @@ uint8_t LSM9DS1::read_accel_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_XG, LSM9DS1_STATUS_REG);
-		if ((STATUS_val & 0x01) == 0x01){
+		if (STATUS_val & 0x01){
 			read_raw_accel();
 			return 1;
 		}
@@ -702,7 +702,7 @@ uint8_t LSM9DS1::read_raw_mag(){
 uint8_t LSM9DS1::read_mag_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_M) == 1){
+		if (digitalRead(_DRDY_pin_M)){
 			read_raw_mag();
 			return 1;
 		}
@@ -718,7 +718,7 @@ uint8_t LSM9DS1::read_mag_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_M, LSM9DS1_STATUS_REG_M);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_mag();
 			return 1;
 		}
@@ -806,7 +806,7 @@ uint8_t LSM9DS1::discard_measures_mag(uint8_t number_of_measures, uint32_t timeo
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_mag();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_mag();
 			now = micros();
 			count++;
@@ -835,7 +835,7 @@ uint8_t LSM9DS1::read_raw_thermo(){
 uint8_t LSM9DS1::read_thermo_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_A) == 1){
+		if (digitalRead(_DRDY_pin_A)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -851,7 +851,7 @@ uint8_t LSM9DS1::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_XG, LSM9DS1_STATUS_REG);
-		if ((STATUS_val & (1 << 2)) == (1 << 2)){
+		if (STATUS_val & (1 << 2)){
 			read_raw_thermo();
 			return 1;
 		}
