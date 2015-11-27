@@ -54,8 +54,8 @@ void BMP180::readMultipleRegisters(uint8_t* buffer, uint8_t number_of_registers,
 	Wire.write(startRegister); //register address to read from
 	Wire.endTransmission();	//end transmission
   	Wire.requestFrom((uint8_t) BMP180_ADDR, number_of_registers);	//request n byte
-  	for (uint8_t ii = 0; ii < number_of_registers; ii++){
-  		buffer[ii] = Wire.read();		//read the incoming bytes
+  	while(number_of_registers--){
+  		*buffer++ = Wire.read();		//read the incoming bytes
   	}
 	Wire.endTransmission();	//end transmission
   	return;
