@@ -186,7 +186,7 @@ uint8_t HMC5983::read_raw_mag(){
 uint8_t HMC5983::read_mag_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_mag();
 			return 1;
 		}
@@ -202,11 +202,11 @@ uint8_t HMC5983::read_mag_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, HMC5983_STATUS);
-		if ((STATUS_val & 0x1) == 0x1){
+		if (STATUS_val & 0x01){
 			read_raw_mag();
 			return 1;
 		}
-		else if ((STATUS_val & 0x2) == 0x2){	//it means that the sensor is locked
+		else if (STATUS_val & 0x02){	//it means that the sensor is locked
 			writeRegister(_chipSelectPin, HMC5983_MODE, _MODE_val); //reset the sensor
 		}
 		if ((micros() - now) < 0){
@@ -251,22 +251,10 @@ uint8_t HMC5983::self_test_mag(uint8_t mode){
 	// define threshold as Gauss
 	float thrs_min = 0.623076923076923;
 	float thrs_max = 1.474358974358974;
+	// Check if values are bigger than the threshold
 	if (ch_st(0, x, thrs_min, thrs_max) && ch_st(0, y, thrs_min, thrs_max) && ch_st(0, z, thrs_min, thrs_max)) {
 		status = 1;
 	}
-	// Check if values are bigger than the threshold
-	/*
-	if (mode == 0){
-		if ((x > thrs) && (y > thrs) && (z > thrs)){
-			status = 1;
-		}
-	}
-	else {
-		if ((x < - thrs) && (y < - thrs) && (z < - thrs)){
-			status = 1;
-		}
-	}
-	*/
 	turn_off_mag();
 	//remove self test
 	writeRegister(_chipSelectPin, HMC5983_CFG_A, CFG_A_val);
@@ -289,7 +277,7 @@ uint8_t HMC5983::discard_measures_mag(uint8_t number_of_measures, uint32_t timeo
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_mag();
-		if ((STATUS_value & (1 << 4)) == (1 << 4)){
+		if (STATUS_value & (1 << 4)){
 			read_raw_mag();
 			now = micros();
 			count++;
@@ -317,7 +305,7 @@ uint8_t HMC5983::read_raw_thermo(){
 uint8_t HMC5983::read_thermo_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -333,7 +321,7 @@ uint8_t HMC5983::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, HMC5983_STATUS);
-		if ((STATUS_val & 0x01) == 0x01){
+		if (STATUS_val & 0x01){
 			read_raw_thermo();
 			return 1;
 		}
