@@ -192,7 +192,7 @@ uint8_t LIS3MDL::read_raw_mag(){
 uint8_t LIS3MDL::read_mag_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_mag();
 			return 1;
 		}
@@ -208,7 +208,7 @@ uint8_t LIS3MDL::read_mag_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, LIS3MDL_STATUS);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_mag();
 			return 1;
 		}
@@ -307,7 +307,7 @@ uint8_t LIS3MDL::discard_measures_mag(uint8_t number_of_measures, uint32_t timeo
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_mag();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_mag();
 			now = micros();
 			count++;
@@ -336,7 +336,7 @@ uint8_t LIS3MDL::read_raw_thermo(){
 uint8_t LIS3MDL::read_thermo_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -352,7 +352,7 @@ uint8_t LIS3MDL::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = status_mag();
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -369,7 +369,7 @@ uint8_t LIS3MDL::discard_measures_thermo(uint8_t number_of_measures, uint32_t ti
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_mag();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_thermo();
 			now = micros();
 			count++;
