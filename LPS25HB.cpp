@@ -164,7 +164,7 @@ uint8_t LPS25HB::read_raw_baro(){
 uint8_t LPS25HB::read_baro_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_baro();
 			return 1;
 		}
@@ -180,7 +180,7 @@ uint8_t LPS25HB::read_baro_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, LPS25HB_STATUS);
-		if ((STATUS_val & (1 << 1)) == (1 << 1)){
+		if (STATUS_val & (1 << 1)){
 			read_raw_baro();
 			return 1;
 		}
@@ -202,7 +202,7 @@ uint8_t LPS25HB::discard_measures_baro(uint8_t number_of_measures, uint32_t time
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_baro();
-		if ((STATUS_value & (1 << 5)) == (1 << 5)){
+		if (STATUS_value & (1 << 5)){
 			read_raw_baro();
 			now = micros();
 			count++;
@@ -231,7 +231,7 @@ uint8_t LPS25HB::read_raw_thermo(){
 uint8_t LPS25HB::read_thermo_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -247,7 +247,7 @@ uint8_t LPS25HB::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = status_baro();
-		if ((STATUS_val & 0x01) == 0x01){
+		if (STATUS_val & 0x01){
 			read_raw_thermo();
 			return 1;
 		}
@@ -264,7 +264,7 @@ uint8_t LPS25HB::discard_measures_thermo(uint8_t number_of_measures, uint32_t ti
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_baro();
-		if ((STATUS_value & (1 << 4)) == (1 << 4)){
+		if (STATUS_value & (1 << 4)){
 			read_raw_thermo();
 			now = micros();
 			count++;
