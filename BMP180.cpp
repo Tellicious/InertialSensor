@@ -195,7 +195,7 @@ uint8_t BMP180::read_baro_STATUS(uint32_t timeout){
 	}
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(BMP180_CTRL_MEAS);
-		if ((STATUS_val & (1 << 5)) == 0x00){
+		if (!(STATUS_val & (1 << 5))){
 			read_raw_baro();
 			compensate_baro();
 			return 1;
@@ -221,7 +221,7 @@ uint8_t BMP180::discard_measures_baro(uint8_t number_of_measures, uint32_t timeo
 	}
 	while (count < number_of_measures){
 		uint8_t STATUS_value = status_baro();
-		if ((STATUS_value & (1 << 5)) == 0x00){
+		if (!(STATUS_value & (1 << 5))){
 			if(! writeRegister(BMP180_CTRL_MEAS, _bmp180_read_press_cmd)){
 				return 0;
 			}
@@ -259,7 +259,7 @@ uint8_t BMP180::read_thermo_STATUS(uint32_t timeout){
 	}
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = status_baro();
-		if ((STATUS_val & (1 << 5)) == 0x00){
+		if (!(STATUS_val & (1 << 5))){
 			read_raw_thermo();
 			return 1;
 		}
@@ -279,7 +279,7 @@ uint8_t BMP180::discard_measures_thermo(uint8_t number_of_measures, uint32_t tim
 	}
 	while (count < number_of_measures){
 		uint8_t STATUS_value = status_baro();
-		if ((STATUS_value & (1 << 5)) == 0x00){
+		if (!(STATUS_value & (1 << 5))){
 			if(! writeRegister(BMP180_CTRL_MEAS, BMP180_READ_TEMP)){
 				return 0;
 			}
