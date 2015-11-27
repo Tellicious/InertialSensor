@@ -179,7 +179,7 @@ uint8_t ADXL345::read_raw_accel(){
 uint8_t ADXL345::read_accel_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_accel();
 			return 1;
 		}
@@ -195,7 +195,7 @@ uint8_t ADXL345::read_accel_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, ADXL345_INT_SOURCE);
-		if ((STATUS_val & 0x80) == 0x80){
+		if (STATUS_val & 0x80){
 			read_raw_accel();
 			return 1;
 		}
