@@ -120,7 +120,7 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 	writeRegister(_chipSelectPin, L3GD20H_LOW_ODR,LOW_ODR_val);
 	//
         uint8_t CTRL2_val;
-	if (HP_enable == 1){
+	if (HP_enable){
 		//no DEN interrupt, set High-pass filter frequency
 		CTRL2_val = HP_freq;
 	}
@@ -208,7 +208,7 @@ uint8_t L3GD20H::read_raw_gyro(){
 uint8_t L3GD20H::read_gyro_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin) == 1){
+		if (digitalRead(_DRDY_pin)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -224,7 +224,7 @@ uint8_t L3GD20H::read_gyro_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, L3GD20H_STATUS);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -285,7 +285,7 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 	// Turn on self-test
 	turn_off_gyro();
 	uint8_t CTRL4_val = readRegister(_chipSelectPin, L3GD20H_CTRL4);
-	if (mode == 0){
+	if (!mode){
 		CTRL4_val |= (1 << 1); // Self-test mode 0
 	}
 	else {
@@ -328,18 +328,6 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 	if (ch_st(x_pre, x_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(y_pre, y_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(z_pre, z_post, (0.6 * thrs), (1.4 * thrs))) {
 		status = 1;
 	}
-	/*
-	if (mode == 0){
-		if ((x > thrs) && (y < - thrs) && (z > thrs)){
-			status = 1;
-		}
-	}
-	else {
-		if ((x < - thrs) && (y > thrs) && (z < - thrs)){
-			status = 1;
-		}
-	}
-	*/
 	turn_off_gyro();
 	CTRL4_val &= 0xF9; // Remove Self-Test
 	writeRegister(_chipSelectPin, L3GD20H_CTRL4, CTRL4_val);
@@ -362,7 +350,7 @@ uint8_t L3GD20H::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_gyro();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_gyro();
 			now = micros();
 			count++;
