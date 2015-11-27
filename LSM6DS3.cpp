@@ -12,13 +12,13 @@
 
 //====================================Registers Addresses=========================================// 
 #define LSM6DS3_FUNC_CFG_ACCESS 		0x01
-#define LSM6DS3_SENSOR_SYNC_TIME_FRAME 	0x04
+#define LSM6DS3_SENSOR_SYNC_TIME_FRAME 		0x04
 #define LSM6DS3_FIFO_CTRL1			0x06
 #define LSM6DS3_FIFO_CTRL2			0x07
 #define LSM6DS3_FIFO_CTRL3			0x08
 #define LSM6DS3_FIFO_CTRL4			0x09
 #define LSM6DS3_FIFO_CTRL5			0x0A
-#define LSM6DS3_ORIENT_CFG_G 		0x0B
+#define LSM6DS3_ORIENT_CFG_G 			0x0B
 #define LSM6DS3_INT1_CTRL			0x0D
 #define LSM6DS3_INT2_CTRL			0x0E
 #define LSM6DS3_WHO_AM_I 			0x0F
@@ -32,7 +32,7 @@
 #define LSM6DS3_CTRL8_XL			0x17
 #define LSM6DS3_CTRL9_XL			0x18
 #define LSM6DS3_CTRL10_C			0x19
-#define LSM6DS3_MASTER_CONFIG		0x1A
+#define LSM6DS3_MASTER_CONFIG			0x1A
 #define LSM6DS3_WAKE_UP_SRC			0x1B
 #define LSM6DS3_TAP_SRC				0x1C
 #define LSM6DS3_D6D_SRC				0x1D
@@ -51,37 +51,37 @@
 #define LSM6DS3_OUTY_H_XL			0x2B
 #define LSM6DS3_OUTZ_L_XL			0x2C
 #define LSM6DS3_OUTZ_H_XL			0x2D
-#define LSM6DS3_SENSORHUB1_REG		0x2E
-#define LSM6DS3_SENSORHUB2_REG		0x2F
-#define LSM6DS3_SENSORHUB3_REG		0x30
-#define LSM6DS3_SENSORHUB4_REG		0x31
-#define LSM6DS3_SENSORHUB5_REG		0x32
-#define LSM6DS3_SENSORHUB6_REG		0x33
-#define LSM6DS3_SENSORHUB7_REG		0x34
-#define LSM6DS3_SENSORHUB8_REG		0x35
-#define LSM6DS3_SENSORHUB9_REG		0x36
-#define LSM6DS3_SENSORHUB10_REG		0x37
-#define LSM6DS3_SENSORHUB11_REG		0x38
-#define LSM6DS3_SENSORHUB12_REG		0x39
-#define LSM6DS3_FIFO_STATUS1		0x3A
-#define LSM6DS3_FIFO_STATUS2		0x3B
-#define LSM6DS3_FIFO_STATUS3		0x3C
-#define LSM6DS3_FIFO_STATUS4		0x3D
-#define LSM6DS3_FIFO_DATA_OUT_L		0x3E
-#define LSM6DS3_FIFO_DATA_OUT_H		0x3F
-#define LSM6DS3_TIMESTAMP0_REG		0x40
-#define LSM6DS3_TIMESTAMP1_REG		0x41
-#define LSM6DS3_TIMESTAMP2_REG		0x42
-#define LSM6DS3_STEP_TIMESTAMP_L	0x49
-#define LSM6DS3_STEP_TIMESTAMP_H	0x4A
-#define LSM6DS3_STEP_COUNTER_L		0x4B
-#define LSM6DS3_STEP_COUNTER_H		0x4C
-#define LSM6DS3_SENSORHUB13_REG		0x4D
-#define LSM6DS3_SENSORHUB14_REG		0x4E
-#define LSM6DS3_SENSORHUB15_REG		0x4F
-#define LSM6DS3_SENSORHUB16_REG		0x50
-#define LSM6DS3_SENSORHUB17_REG		0x51
-#define LSM6DS3_SENSORHUB18_REG		0x52
+#define LSM6DS3_SENSORHUB1_REG			0x2E
+#define LSM6DS3_SENSORHUB2_REG			0x2F
+#define LSM6DS3_SENSORHUB3_REG			0x30
+#define LSM6DS3_SENSORHUB4_REG			0x31
+#define LSM6DS3_SENSORHUB5_REG			0x32
+#define LSM6DS3_SENSORHUB6_REG			0x33
+#define LSM6DS3_SENSORHUB7_REG			0x34
+#define LSM6DS3_SENSORHUB8_REG			0x35
+#define LSM6DS3_SENSORHUB9_REG			0x36
+#define LSM6DS3_SENSORHUB10_REG			0x37
+#define LSM6DS3_SENSORHUB11_REG			0x38
+#define LSM6DS3_SENSORHUB12_REG			0x39
+#define LSM6DS3_FIFO_STATUS1			0x3A
+#define LSM6DS3_FIFO_STATUS2			0x3B
+#define LSM6DS3_FIFO_STATUS3			0x3C
+#define LSM6DS3_FIFO_STATUS4			0x3D
+#define LSM6DS3_FIFO_DATA_OUT_L			0x3E
+#define LSM6DS3_FIFO_DATA_OUT_H			0x3F
+#define LSM6DS3_TIMESTAMP0_REG			0x40
+#define LSM6DS3_TIMESTAMP1_REG			0x41
+#define LSM6DS3_TIMESTAMP2_REG			0x42
+#define LSM6DS3_STEP_TIMESTAMP_L		0x49
+#define LSM6DS3_STEP_TIMESTAMP_H		0x4A
+#define LSM6DS3_STEP_COUNTER_L			0x4B
+#define LSM6DS3_STEP_COUNTER_H			0x4C
+#define LSM6DS3_SENSORHUB13_REG			0x4D
+#define LSM6DS3_SENSORHUB14_REG			0x4E
+#define LSM6DS3_SENSORHUB15_REG			0x4F
+#define LSM6DS3_SENSORHUB16_REG			0x50
+#define LSM6DS3_SENSORHUB17_REG			0x51
+#define LSM6DS3_SENSORHUB18_REG			0x52
 #define LSM6DS3_FUNC_SRC			0x53
 #define LSM6DS3_TAP_CFG				0x58
 #define LSM6DS3_TAP_THS_6D			0x59
@@ -91,14 +91,14 @@
 #define LSM6DS3_FREE_FALL			0x5D
 #define LSM6DS3_MD1_CFG				0x5E
 #define LSM6DS3_MD2_CFG				0x5F
-#define LSM6DS3_OUT_MAG_RAW_X_L		0x66
-#define LSM6DS3_OUT_MAG_RAW_X_H		0x67
-#define LSM6DS3_OUT_MAG_RAW_Y_L		0x68
-#define LSM6DS3_OUT_MAG_RAW_Y_H		0x69
-#define LSM6DS3_OUT_MAG_RAW_Z_L		0x6A
-#define LSM6DS3_OUT_MAG_RAW_Z_H		0x6B
+#define LSM6DS3_OUT_MAG_RAW_X_L			0x66
+#define LSM6DS3_OUT_MAG_RAW_X_H			0x67
+#define LSM6DS3_OUT_MAG_RAW_Y_L			0x68
+#define LSM6DS3_OUT_MAG_RAW_Y_H			0x69
+#define LSM6DS3_OUT_MAG_RAW_Z_L			0x6A
+#define LSM6DS3_OUT_MAG_RAW_Z_H			0x6B
 //=======================================Constants=============================================// 
-#define LSM6DS3_ID					0x69
+#define LSM6DS3_ID				0x69
 #define LSM6DS3_READ				0x80
 //==================================Auxiliary Functions========================================//
 //---------------Read one register from the SPI-----------------//
@@ -338,7 +338,7 @@ uint8_t LSM6DS3::read_raw_gyro(){
 uint8_t LSM6DS3::read_gyro_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_G) == 1){
+		if (digitalRead(_DRDY_pin_G)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -354,7 +354,7 @@ uint8_t LSM6DS3::read_gyro_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, LSM6DS3_STATUS_REG);
-		if ((STATUS_val & (1 << 1)) == (1 << 1)){
+		if (STATUS_val & (1 << 1)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -422,7 +422,7 @@ uint8_t LSM6DS3::self_test_gyro(uint8_t mode){
 	// Turn off the sensor and setup self-test
 	turn_off_gyro();
 	uint8_t CTRL5_val = readRegister(_chipSelectPin, LSM6DS3_CTRL5_C);
-	if (mode == 0){
+	if (!mode){
 		CTRL5_val |= 0x04; // Self-test mode 0
 	}
 	else {
@@ -492,7 +492,7 @@ uint8_t LSM6DS3::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 	return 1;
 }
 
-//=============================Public Members Accelerometer==================================== //
+//=============================Public Members Accelerometer====================================//
 //----------------Turn on accelerometer----------------//
 void LSM6DS3::turn_on_accel(){
 	writeRegister(_chipSelectPin, LSM6DS3_CTRL1_XL, _CTRL1_val);
@@ -519,7 +519,7 @@ uint8_t LSM6DS3::read_raw_accel(){
 uint8_t LSM6DS3::read_accel_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_A) == 1){
+		if (digitalRead(_DRDY_pin_A)){
 			read_raw_accel();
 			return 1;
 		}
@@ -535,7 +535,7 @@ uint8_t LSM6DS3::read_accel_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, LSM6DS3_STATUS_REG);
-		if ((STATUS_val & 0x01) == 0x01){
+		if (STATUS_val & 0x01){
 			read_raw_accel();
 			return 1;
 		}
@@ -579,7 +579,7 @@ uint8_t LSM6DS3::self_test_accel(uint8_t mode){
 	// Turn off the sensor and setup self-test
 	turn_off_accel();
 	uint8_t CTRL5_val = readRegister(_chipSelectPin, LSM6DS3_CTRL5_C);
-	if (mode == 0){
+	if (!mode){
 		CTRL5_val |= 0x01; // Self-test mode 0
 	}
 	else {
@@ -651,7 +651,7 @@ uint8_t LSM6DS3::read_raw_thermo(){
 uint8_t LSM6DS3::read_thermo_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_A) == 1){
+		if (digitalRead(_DRDY_pin_A)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -667,7 +667,7 @@ uint8_t LSM6DS3::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, LSM6DS3_STATUS_REG);
-		if ((STATUS_val & (1 << 2)) == (1 << 2)){
+		if (STATUS_val & (1 << 2)){
 			read_raw_thermo();
 			return 1;
 		}
