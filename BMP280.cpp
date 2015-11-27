@@ -78,7 +78,7 @@ void BMP280::baro_cal_64_bit(int32_t adc_P){
   	var2 = var2 + (((int64_t) _bmp280_calib.dig_P4) << 35);
   	var1 = ((var1 * var1 * (int64_t) _bmp280_calib.dig_P3) >> 8) + ((var1 * (int64_t) _bmp280_calib.dig_P2) << 12);
   	var1 = (((((int64_t) 1) << 47) + var1)) * ((int64_t) _bmp280_calib.dig_P1) >> 33;
-  	if (var1 == 0) {
+  	if (!var1) {
 		_bmp280_calib.p = 0.0;
   		press  = 0.0;
     	return;  // avoid exception caused by division by zero
@@ -101,7 +101,7 @@ void BMP280::baro_cal_32_bit(int32_t adc_P){
 	var2 = (var2 >> 2) + (((int32_t) _bmp280_calib.dig_P4) << 16);
 	var1 = (((_bmp280_calib.dig_P3 * (((var1 >> 2) * (var1 >> 2)) >> 13 )) >> 3) + ((((int32_t) _bmp280_calib.dig_P2) * var1) >> 1)) >> 18; 
 	var1 = ((((32768 + var1)) * ((int32_t) _bmp280_calib.dig_P1)) >> 15);
-	if (var1 == 0) {
+	if (!var1) {
 		_bmp280_calib.p = 0.0;
 		press  = 0.0;
 		return; // avoid exception caused by division by zero 
@@ -249,7 +249,7 @@ uint8_t BMP280::read_baro_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin, BMP280_STAT_REG);
-		if ((STATUS_val & (1 << 3)) == 0x00){
+		if (!(STATUS_val & (1 << 3))){
 			read_baro_compensated();
 			return 1;
 		}
@@ -278,7 +278,7 @@ uint8_t BMP280::discard_measures_baro(uint8_t number_of_measures, uint32_t timeo
 	uint32_t now = micros();
 	while (count < number_of_measures){
 		uint8_t STATUS_value = status_baro();
-		if ((STATUS_value & (1 << 3)) == 0x00){
+		if (!(STATUS_value & (1 << 3))){
 			read_raw_baro();
 			now = micros();
 			count++;
@@ -308,7 +308,7 @@ uint8_t BMP280::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = status_baro();
-		if ((STATUS_val & (1 << 3)) == 0x00){
+		if (!(STATUS_val & (1 << 3))){
 			read_raw_thermo();
 			return 1;
 		}
@@ -325,7 +325,7 @@ uint8_t BMP280::discard_measures_thermo(uint8_t number_of_measures, uint32_t tim
 	uint32_t now = micros();
 	while (count < number_of_measures){
 		uint8_t STATUS_value = status_baro();
-		if ((STATUS_value & (1 << 3)) == 0x00){
+		if (!(STATUS_value & (1 << 3))){
 			read_raw_thermo();
 			now = micros();
 			count++;
