@@ -287,7 +287,7 @@ uint8_t LSM9DS0::read_raw_gyro(){
 uint8_t LSM9DS0::read_gyro_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_G) == 1){
+		if (digitalRead(_DRDY_pin_G)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -303,7 +303,7 @@ uint8_t LSM9DS0::read_gyro_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_G, LSM9DS0_STATUS_REG_G);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_gyro();
 			return 1;
 		}
@@ -364,7 +364,7 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 	// Turn on self-test
 	turn_off_gyro();
 	uint8_t CTRL4_val = readRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G);
-	if (mode == 0){
+	if (!mode){
 		CTRL4_val |= (1 << 1); // Self-test mode 0
 	}
 	else {
@@ -406,20 +406,10 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 	else {
 		return 0;
 	}
+	// Check if values are bigger than the threshold
 	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
 	}
-	// Check if values are bigger than the threshold
-	/*if (mode == 0){
-		if ((gx > thrs) && (gy < - thrs) && (gz < - thrs)){
-			status = 1;
-		}
-	}
-	else {
-		if ((gx < - thrs) && (gy > thrs) && (gz > thrs)){
-			status = 1;
-		}
-	}*/
 	turn_off_gyro();
 	CTRL4_val &= 0xF9; // Removes Self-Test
 	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G, CTRL4_val);
@@ -442,7 +432,7 @@ uint8_t LSM9DS0::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_gyro();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_gyro();
 			now = micros();
 			count++;
@@ -457,7 +447,7 @@ uint8_t LSM9DS0::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 	return 1;
 }
 
-//=============================Public Members Accelerometer==================================== //
+//=============================Public Members Accelerometer====================================//
 //-----------------------Configuration-----------------------//
 uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_t accel_bw, uint8_t mag_range, uint8_t mag_odr,uint8_t HP_accel_enable){
 	init();
@@ -591,7 +581,7 @@ uint8_t LSM9DS0::read_raw_accel(){
 uint8_t LSM9DS0::read_accel_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_A) == 1){
+		if (digitalRead(_DRDY_pin_A)){
 			read_raw_accel();
 			return 1;
 		}
@@ -607,7 +597,7 @@ uint8_t LSM9DS0::read_accel_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_A);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_accel();
 			return 1;
 		}
@@ -657,7 +647,7 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 	// Turn off the sensor and setup self-test
 	turn_off_accel();
 	uint8_t CTRL2_val = readRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM);
-	if (mode == 0){
+	if (!mode){
 		CTRL2_val |= (1 << 1); // Self-test mode 0 (positive)
 	}
 	else {
@@ -711,16 +701,6 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
 	}
-	/*if (mode == 0){
-		if (((ax_post - ax_pre) > thrs_xy) && ((ay_post - ay_pre) > thrs_xy) && ((az_post - az_pre) > thrs_z)){
-			status = 1;
-		}
-	}
-	else {
-		if (((ax_post - ax_pre) < - thrs_xy) && ((ay_post - ay_pre) < - thrs_xy) && ((az_post - az_pre) < - thrs_z)){
-			status = 1;
-		}
-	}*/
 	turn_off_accel();
 	CTRL2_val &= 0xF9; // Removes Self-Test
 	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM, CTRL2_val);
@@ -743,7 +723,7 @@ uint8_t LSM9DS0::discard_measures_accel(uint8_t number_of_measures, uint32_t tim
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_accel();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_accel();
 			now = micros();
 			count++;
@@ -783,7 +763,7 @@ uint8_t LSM9DS0::read_raw_mag(){
 uint8_t LSM9DS0::read_mag_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_M) == 1){
+		if (digitalRead(_DRDY_pin_M)){
 			read_raw_mag();
 			return 1;
 		}
@@ -799,7 +779,7 @@ uint8_t LSM9DS0::read_mag_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_M);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_mag();
 			return 1;
 		}
@@ -821,7 +801,7 @@ uint8_t LSM9DS0::discard_measures_mag(uint8_t number_of_measures, uint32_t timeo
 	uint32_t now = micros();
 	while (count < (number_of_measures * 0.5)){
 		uint8_t STATUS_value = status_mag();
-		if ((STATUS_value & (1 << 7)) == (1 << 7)){
+		if (STATUS_value & (1 << 7)){
 			read_raw_mag();
 			now = micros();
 			count++;
@@ -850,7 +830,7 @@ uint8_t LSM9DS0::read_raw_thermo(){
 uint8_t LSM9DS0::read_thermo_DRDY(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_M) == 1){
+		if (digitalRead(_DRDY_pin_M)){
 			read_raw_thermo();
 			return 1;
 		}
@@ -866,7 +846,7 @@ uint8_t LSM9DS0::read_thermo_STATUS(uint32_t timeout){
 	uint32_t now = micros();
 	while((micros() - now) < timeout){
 		uint8_t STATUS_val = readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_M);
-		if ((STATUS_val & (1 << 3)) == (1 << 3)){
+		if (STATUS_val & (1 << 3)){
 			read_raw_thermo();
 			return 1;
 		}
