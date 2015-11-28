@@ -54,7 +54,7 @@ void BMP180::readMultipleRegisters(uint8_t* buffer, uint8_t number_of_registers,
 	Wire.write(startRegister); //register address to read from
 	Wire.endTransmission();	//end transmission
   	Wire.requestFrom((uint8_t) BMP180_ADDR, number_of_registers);	//request n byte
-  	while(number_of_registers--){
+  	while (number_of_registers--){
   		*buffer++ = Wire.read();		//read the incoming bytes
   	}
 	Wire.endTransmission();	//end transmission
@@ -73,7 +73,7 @@ uint8_t BMP180::writeRegister(uint8_t thisRegister, const uint8_t thisValue) {
 int32_t BMP180::computeB5(int32_t UT) {
 	int32_t X1 = (UT - (int32_t) _bmp180_calib.AC6v) * ((int32_t) _bmp180_calib.AC5v) >> 15;
 	int32_t X2 = ((int32_t) _bmp180_calib.MCv << 11) / (X1 + (int32_t) _bmp180_calib.MDv);
-	return X1 + X2;
+	return (X1 + X2);
 }
 
 //=====================================Constructors==========================================//

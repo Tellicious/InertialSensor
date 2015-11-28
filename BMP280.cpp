@@ -54,7 +54,7 @@ void BMP280::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8
   	startRegister |= BMP280_READ;// register in multiple read mode
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
   	SPI.transfer(startRegister);		// send the command to read thisRegister
-  	while(number_of_registers--){
+  	while (number_of_registers--){
   		*buffer++ = SPI.transfer(0x00);
   	}
   	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip

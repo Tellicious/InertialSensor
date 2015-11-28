@@ -62,7 +62,7 @@ void ADXL345::readMultipleRegisters(uint8_t chipSelectPin, uint8_t * buffer, uin
 	startRegister |= (ADXL345_READ | ADXL345_MULT);// register in multiple read mode
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
 	SPI.transfer(startRegister);		// send the command to read thisRegister
-	while(number_of_registers--){
+	while (number_of_registers--){
 		*buffer++ = SPI.transfer(0x00);
 	}
 	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
@@ -113,7 +113,7 @@ void ADXL345::init(){
 
 //=============================Public Members Accelerometer====================================//
 //-----------------------Configuration-----------------------//
-uint8_t ADXL345::uint8_t config_accel(uint8_t accel_range, uint8_t accel_odr){
+uint8_t ADXL345::config_accel(uint8_t accel_range, uint8_t accel_odr){
 	init();
 	//
 	// Trash the first reading
@@ -155,7 +155,7 @@ uint8_t ADXL345::uint8_t config_accel(uint8_t accel_range, uint8_t accel_odr){
 
 //----------------Turn on accelerometer----------------//
 void ADXL345::turn_on_accel(){
-	writeRegister(_chipSelectPin, ADXL345_CTRL1_XL, _POWER_CTL_val);
+	writeRegister(_chipSelectPin, ADXL345_POWER_CTL, _POWER_CTL_val);
 	delay(200);
 }
 
@@ -169,9 +169,9 @@ void ADXL345::turn_off_accel(){
 uint8_t ADXL345::read_raw_accel(){
 	uint8_t buffer[6];
 	readMultipleRegisters(_chipSelectPin, buffer, 6, ADXL345_DATAX0);
-	ax = (float) (((int16_t) (buffer[0] << 8) | buffer[1]) * _sc_fact);
-	ay = (float) (((int16_t) (buffer[2] << 8) | buffer[3]) * _sc_fact);
-	az = (float) (((int16_t) (buffer[4] << 8) | buffer[5]) * _sc_fact);
+	x = (float) (((int16_t) (buffer[0] << 8) | buffer[1]) * _sc_fact);
+	y = (float) (((int16_t) (buffer[2] << 8) | buffer[3]) * _sc_fact);
+	z = (float) (((int16_t) (buffer[4] << 8) | buffer[5]) * _sc_fact);
 	return 1;
 }
 
