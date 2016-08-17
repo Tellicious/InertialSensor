@@ -4,6 +4,10 @@
 //  Created by Andrea Vivani on 08/11/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+#ifndef BMP180_H_
+#define BMP180_H_
+#include "InertialSensor.h"
+#include <Wire.h>
 //======================================Parameters=============================================//
 #define BMP180_DISCARDED_MEASURES	10	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define BMP180_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -12,11 +16,6 @@
 #define BMP180_OS_2		1	
 #define BMP180_OS_4		2	
 #define BMP180_OS_8		3	
-
-#ifndef BMP180_H_
-#define BMP180_H_
-#include "InertialSensor.h"
-#include <Wire.h>
 
 //================Calibration Data==================//
 typedef struct{
@@ -63,7 +62,7 @@ class BMP180: public InertialSensor {
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
 		uint8_t _bmp180_read_press_cmd; //pressure reading command
-		uint8_t _bmp180Mode; //power mode (oversampling) 
+		uint8_t _bmp180OSS; //power mode (oversampling) 
 		bmp180_calibration_data _bmp180_calib; //calibration data struct
 		uint8_t readRegister(uint8_t thisRegister);
 		void readMultipleRegisters(uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);

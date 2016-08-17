@@ -4,6 +4,10 @@
 //  Created by Andrea Vivani on 7/7/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+#ifndef LIS3MDL_H_
+#define LIS3MDL_H_
+#include "InertialSensor.h"
+#include <SPI.h>
 //======================================Parameters=============================================//
 #define LIS3MDL_MAG_SELF_TEST_MEASURES 	10 	//number of samples to be averaged when performing magnetometer self-test
 #define LIS3MDL_DISCARDED_MEASURES		5	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
@@ -29,13 +33,6 @@
 #define LIS3MDL_RANGE_8		0x20
 #define LIS3MDL_RANGE_12	0x40
 #define LIS3MDL_RANGE_16	0x60
-
-
-#ifndef LIS3MDL_H_
-#define LIS3MDL_H_
-#include "InertialSensor.h"
-#include <SPI.h>
-
 
 class LIS3MDL: public InertialSensor {
 	public:
@@ -72,6 +69,6 @@ class LIS3MDL: public InertialSensor {
 		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
 		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
 		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const double val1, const double val2, const double lim1, const double lim2);
+		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
 };
 #endif

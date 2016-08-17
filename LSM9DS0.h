@@ -4,6 +4,10 @@
 //  Created by Andrea Vivani on 28/3/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+#ifndef LSM9DS0_H_
+#define LSM9DS0_H_
+#include "InertialSensor.h"
+#include <SPI.h>
 //======================================Parameters=============================================//
 #define LSM9DS0_GYRO_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing gyroscope self-test
 #define LSM9DS0_ACCEL_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing accelerometer self-test
@@ -71,11 +75,6 @@
 #define LSM9DS0_RANGE_M_8			0x02
 #define LSM9DS0_RANGE_M_12			0x03
 
-#ifndef LSM9DS0_H_
-#define LSM9DS0_H_
-#include "InertialSensor.h"
-#include <SPI.h>
-
 class LSM9DS0: public InertialSensor{
 	public:
 		LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM);	//constructor
@@ -137,6 +136,6 @@ class LSM9DS0: public InertialSensor{
 		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
 		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
 		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const double val1, const double val2, const double lim1, const double lim2);
+		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
 };
 #endif

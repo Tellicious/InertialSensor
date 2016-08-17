@@ -4,6 +4,10 @@
 //  Created by Andrea Vivani on 20/6/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+#ifndef LPS25HB_H_
+#define LPS25HB_H_
+#include "InertialSensor.h"
+#include <SPI.h>
 //======================================Parameters=============================================//
 #define LPS25HB_DISCARDED_MEASURES	10	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define LPS25HB_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -31,12 +35,6 @@
 #define LPS25HB_MA_16				0x0F
 #define LPS25HB_MA_32				0x1F
 
-
-#ifndef LPS25HB_H_
-#define LPS25HB_H_
-#include "InertialSensor.h"
-#include <SPI.h>
-
 class LPS25HB: public InertialSensor {
 	public:
 		LPS25HB (uint8_t CS_pin);	//constructor
@@ -62,7 +60,7 @@ class LPS25HB: public InertialSensor {
 		uint8_t read_thermo_STATUS(uint32_t timeout); //read data from thermometer if available (reads the status register), timeout in us
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
-		float _sc_fact = 1.0 / 4096.0;		//scale factor
+		float _sc_fact = 1.0f / 4096.0f;		//scale factor
 		uint8_t _chipSelectPin, _DRDY_pin;	//ChipSelectPin and Data Ready pin
 		uint8_t _CTRL1_val; //value of the register, used when powering up and down the sensor
 		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);

@@ -5,7 +5,7 @@
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
 #include "INS_Mag.h"
-uint8_t INS_Mag::instanced=0;
+uint8_t INS_Mag::instanced = 0;
 
 //=====================================Constructor==========================================//
 INS_Mag::INS_Mag(InertialSensor &sensor, float &meas_x, float &meas_y, float &meas_z, INS_orientation orientation):_sens(sensor), _data(1,1,0){
@@ -167,9 +167,9 @@ INS_Mag::INS_Mag(InertialSensor &sensor, float &meas_x, float &meas_y, float &me
 //---------------------------Read-----------------------------//
 uint8_t INS_Mag::read(uint32_t timeout){
 	uint8_t res=_sens.read_mag(timeout);
-	float mx_ub=(float) _sx * (*_x_p) - bx;
-	float my_ub=(float) _sy * (*_y_p) - by;
-	float mz_ub=(float) _sz * (*_z_p) - bz;
+	float mx_ub = (float) _sx * (*_x_p) - bx;
+	float my_ub = (float) _sy * (*_y_p) - by;
+	float mz_ub = (float) _sz * (*_z_p) - bz;
 	x = s11 * mx_ub + s12 * my_ub + s13 * mz_ub;
 	y = s12 * mx_ub + s22 * my_ub + s23 * mz_ub;
 	z = s13 * mx_ub + s23 * my_ub + s33 * mz_ub;
@@ -291,6 +291,7 @@ uint8_t INS_Mag::cal_compute(INS_Mag_cal calibration_mode, uint8_t print_flag){
 }
 
 //------------------Complete calibration---------------------//
+#ifdef INS_ARDUINO
 uint8_t INS_Mag::calibrate(uint8_t number_of_measures, INS_Mag_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
 	Serial.println();
 	Serial.println("Starting calibration...");
@@ -300,11 +301,11 @@ uint8_t INS_Mag::calibrate(uint8_t number_of_measures, INS_Mag_cal calibration_m
 		if (Serial.available()>0){
             Serial.read();
 			cal_acquire(timeout);
-			Serial.print("Sample acquired! Acc x: ");
+			Serial.print("Sample acquired! Mag x: ");
 			Serial.print(x,4);
-			Serial.print(", Acc y: ");
+			Serial.print(", Mag y: ");
 			Serial.print(y,4);
-			Serial.print(", Acc z: ");
+			Serial.print(", Mag z: ");
 			Serial.println(z,4);
 			Serial.println("Press a key to acquire a sample");
 		}
@@ -312,8 +313,33 @@ uint8_t INS_Mag::calibrate(uint8_t number_of_measures, INS_Mag_cal calibration_m
 	Serial.println("Done acquisition, now computing...");
 	return cal_compute(calibration_mode, print_flag);
 }
+#elif INS_CHIBIOS
+uint8_t INS_Mag::calibrate(uint8_t number_of_measures, INS_Mag_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
+	chprintf(SERIAL_INT, "\r\nStarting calibration...\r\n");
+	initialize_calibration(number_of_measures);
+	chprintf(SERIAL_INT, "Press a key to acquire a sample\r\n");
+	while(_cal_count < number_of_measures){
+		chEvtWaitOne(EVENT_MASK(1));
+		chSysLock();
+		flags_INS = chEvtGetAndClearFlags(&el_INS);
+		chSysUnlock();
+		if (flags_INS & CHN_INPUT_AVAILABLE){
+			msg_t charbuf;
+			do{
+				charbuf = chnGetTimeout(SERIAL_INT, TIME_IMMEDIATE);
+			}
+			while (charbuf != Q_TIMEOUT);
+			cal_acquire(timeout);
+			chprintf(SERIAL_INT,"Sample acquired! Mag x: %-9.4f, Mag y: %-9.4f, Mag z: %-9.4\r\nPress a key to acquire a sample\r\n", x, y ,z);
+		}
+	}
+	chprintf(SERIAL_INT, "Done acquisition, now computing...\r\n");
+	return cal_compute(calibration_mode, print_flag);
+}
+#endif
 
 //-------------Complete calibration with average-------------//
+#ifdef INS_ARDUINO
 uint8_t INS_Mag::calibrate_average(uint8_t number_of_measures, uint8_t average_length, INS_Mag_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
 	Serial.println();
 	Serial.println("Starting calibration with averaged values...");
@@ -323,11 +349,11 @@ uint8_t INS_Mag::calibrate_average(uint8_t number_of_measures, uint8_t average_l
 		if (Serial.available()>0){
             Serial.read();
 			cal_acquire_averaged(average_length, timeout);
-			Serial.print("Sample acquired! Acc x: ");
+			Serial.print("Sample acquired! Mag x: ");
 			Serial.print(x,4);
-			Serial.print(", Acc y: ");
+			Serial.print(", Mag y: ");
 			Serial.print(y,4);
-			Serial.print(", Acc z: ");
+			Serial.print(", Mag z: ");
 			Serial.println(z,4);
 			Serial.println("Press a key to acquire a sample");
 		}
@@ -335,10 +361,35 @@ uint8_t INS_Mag::calibrate_average(uint8_t number_of_measures, uint8_t average_l
 	Serial.println("Done acquisition, now computing...");
 	return cal_compute(calibration_mode, print_flag);
 }
+#elif INS_CHIBIOS
+uint8_t INS_Mag::calibrate_average(uint8_t number_of_measures, uint8_t average_length, INS_Mag_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
+		chprintf(SERIAL_INT, "\r\nStarting calibration with averaged values...\r\n");
+	initialize_calibration(number_of_measures);
+	chprintf(SERIAL_INT, "Press a key to acquire a sample\r\n");
+	while(_cal_count < number_of_measures){
+		chEvtWaitOne(EVENT_MASK(1));
+		chSysLock();
+		flags_INS = chEvtGetAndClearFlags(&el_INS);
+		chSysUnlock();
+		if (flags_INS & CHN_INPUT_AVAILABLE){
+			msg_t charbuf;
+			do{
+				charbuf = chnGetTimeout(SERIAL_INT, TIME_IMMEDIATE);
+			}
+			while (charbuf != Q_TIMEOUT);
+			cal_acquire_averaged(timeout);
+			chprintf(SERIAL_INT,"Sample acquired! Mag x: %-9.4f, Mag y: %-9.4f, Mag z: %-9.4\r\nPress a key to acquire a sample\r\n", x, y ,z);
+		}
+	}
+	chprintf(SERIAL_INT, "Done acquisition, now computing...\r\n");
+	return cal_compute(calibration_mode, print_flag);
+}
+#endif
 
 //====================================Private Members=========================================//
 //--------------------Print cal values-----------------------//
 void INS_Mag::print_calibration_values(){
+#ifdef INS_ARDUINO
 	Serial.println();
 	Serial.println("Scale factors matrix:");
 	// first row
@@ -369,6 +420,12 @@ void INS_Mag::print_calibration_values(){
 	Serial.print(", Bz: ");
 	Serial.println(bz,4);
     Serial.println();
+#elif INS_CHIBIOS
+	chprintf(SERIAL_INT, "\r\nScale factors matrix:\r\n");
+	chprintf(SERIAL_INT, "%-9.4f\t%-9.4f\t%-9.4f\r\n%-9.4f\t%-9.4f\t%-9.4f\r\n%-9.4f\t%-9.4f\t%-9.4f\r\n", s11, s12, s13, s12, s22, s23, s13, s23, s33);
+	chprintf(SERIAL_INT, "\r\nBias values:\r\n");
+	chprintf(SERIAL_INT, "Bx: %-9.4f, By: %-9.4f, Bz: %-9.4f\r\n\r\n", bx, by, bz);
+#endif
 }
 
 //-------------------Reset data matrix---------------------//

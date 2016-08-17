@@ -9,7 +9,6 @@
 #include "LSM6DS3.h"
 #include "Arduino.h"
 #include <SPI.h>
-
 //====================================Registers Addresses=========================================// 
 #define LSM6DS3_FUNC_CFG_ACCESS 		0x01
 #define LSM6DS3_SENSOR_SYNC_TIME_FRAME 		0x04
@@ -134,7 +133,7 @@ void LSM6DS3::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const u
 }
 
 //-----------------Check values for self-test-------------------//
-uint8_t LSM6DS3::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+uint8_t LSM6DS3::ch_st (const float val1, const float val2, const float lim1, const float lim2){
     if (fabs(lim1) > fabs(lim2)){
         return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
     }
@@ -238,16 +237,16 @@ uint8_t LSM6DS3::config_accel_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t
 	// selected accelerometer ODR, range and auto anti-aliasing
 	switch (accel_range){
 		case (LSM6DS3_RANGE_A_2):
-			_sc_fact_a = INS_G_VAL * 0.00006103515625;
+			_sc_fact_a = INS_G_VAL * 0.00006103515625f;
 			break;
 		case (LSM6DS3_RANGE_A_4):
-			_sc_fact_a = INS_G_VAL * 0.0001220703125;
+			_sc_fact_a = INS_G_VAL * 0.0001220703125f;
 			break;
 		case (LSM6DS3_RANGE_A_8):
-			_sc_fact_a = INS_G_VAL * 0.000244140625;
+			_sc_fact_a = INS_G_VAL * 0.000244140625f;
 			break;
 		case (LSM6DS3_RANGE_A_16):
-			_sc_fact_a = INS_G_VAL * 0.00048828125;
+			_sc_fact_a = INS_G_VAL * 0.00048828125f;
 			break;
 		default:
 			return 2;
@@ -271,19 +270,19 @@ uint8_t LSM6DS3::config_accel_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t
 	// Selected gyro ODR and range
 	switch (gyro_range){
 		case (LSM6DS3_RANGE_G_125):
-			_sc_fact_g = 4.375e-3 * INS_TORAD;
+			_sc_fact_g = 4.375e-3f * INS_TORAD;
 			break;
 		case (LSM6DS3_RANGE_G_245):
-			_sc_fact_g = 8.75e-3 * INS_TORAD;
+			_sc_fact_g = 8.75e-3f * INS_TORAD;
 			break;
 		case (LSM6DS3_RANGE_G_500):
-			_sc_fact_g = 17.5e-3 * INS_TORAD;
+			_sc_fact_g = 17.5e-3f * INS_TORAD;
 			break;
 		case (LSM6DS3_RANGE_G_1000):
-			_sc_fact_g = 35e-3 * INS_TORAD;
+			_sc_fact_g = 35e-3f * INS_TORAD;
 			break;
 		case (LSM6DS3_RANGE_G_2000):
-			_sc_fact_g = 70e-3 * INS_TORAD;
+			_sc_fact_g = 70e-3f * INS_TORAD;
 			break;
 		default:
 			return 2;
@@ -369,20 +368,20 @@ return 0;
 uint8_t LSM6DS3::check_gyro_biases(float bx, float by, float bz){
 // Define Threshold based on Full-Scale value
 	float thrs;
-	if ((_sc_fact_g - 4.375e-3 * INS_TORAD) < 1e-5){
-		thrs = 10 * INS_TORAD * 1.2; 	//typical 10dps offset
+	if ((_sc_fact_g - 4.375e-3f * INS_TORAD) < 1e-5f){
+		thrs = 10 * INS_TORAD * 1.2f; 	//typical 10dps offset
 	}
-	else if ((_sc_fact_g - 8.75e-3 * INS_TORAD) < 1e-5){
-		thrs = 10 * INS_TORAD * 1.2;	//typical 10dps offset
+	else if ((_sc_fact_g - 8.75e-3f * INS_TORAD) < 1e-5f){
+		thrs = 10 * INS_TORAD * 1.2f;	//typical 10dps offset
 	}
-	else if ((_sc_fact_g - 17.5e-3 * INS_TORAD) < 1e-5){
-		thrs = 10 * INS_TORAD * 1.2;	//typical 10dps offset
+	else if ((_sc_fact_g - 17.5e-3f * INS_TORAD) < 1e-5f){
+		thrs = 10 * INS_TORAD * 1.2f;	//typical 10dps offset
 	}
-	else if ((_sc_fact_g - 35e-3 * INS_TORAD) < 1e-5){
-		thrs = 10 * INS_TORAD * 1.2;	//typical 10dps offset
+	else if ((_sc_fact_g - 35e-3f * INS_TORAD) < 1e-5f){
+		thrs = 10 * INS_TORAD * 1.2f;	//typical 10dps offset
 	}
-	else if ((_sc_fact_g - 70e-3 * INS_TORAD) < 1e-5){
-		thrs = 10 * INS_TORAD * 1.2;	//typical 10dps offset
+	else if ((_sc_fact_g - 70e-3f * INS_TORAD) < 1e-5f){
+		thrs = 10 * INS_TORAD * 1.2f;	//typical 10dps offset
 	}
 	else {
 		return 0;
@@ -410,7 +409,7 @@ uint8_t LSM6DS3::self_test_gyro(uint8_t mode){
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < LSM6DS3_GYRO_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM6DS3_GYRO_SELF_TEST_MEASURES; ii++){
 		read_gyro_STATUS(LSM6DS3_DISCARD_TIMEOUT);
 		x_pre += gx;
 		y_pre += gy;
@@ -438,7 +437,7 @@ uint8_t LSM6DS3::self_test_gyro(uint8_t mode){
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < LSM6DS3_GYRO_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM6DS3_GYRO_SELF_TEST_MEASURES; ii++){
 		read_gyro_STATUS(LSM6DS3_DISCARD_TIMEOUT);
 		x_post += gx;
 		y_post += gy;
@@ -449,20 +448,20 @@ uint8_t LSM6DS3::self_test_gyro(uint8_t mode){
 	z_post /= LSM6DS3_GYRO_SELF_TEST_MEASURES;
 	// Define threshold based on the Full-Scale value
 	float thrs;
-	if ((_sc_fact_g - 8.75e-3 * INS_TORAD) < 1e-5){
+	if ((_sc_fact_g - 8.75e-3f * INS_TORAD) < 1e-5f){
 		thrs = 20 * INS_TORAD; 
 	}
-	else if ((_sc_fact_g - 17.5e-3 * INS_TORAD) < 1e-5){
+	else if ((_sc_fact_g - 17.5e-3f * INS_TORAD) < 1e-5f){
 		thrs = 70 * INS_TORAD;
 	}
-	else if ((_sc_fact_g - 70e-3 * INS_TORAD) < 1e-5){
+	else if ((_sc_fact_g - 70e-3f * INS_TORAD) < 1e-5f){
 		thrs = 150 * INS_TORAD;
 	}
 	else {
 		return 0;
 	}
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(y_pre, y_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(z_pre, z_post, (0.6 * thrs), (1.4 * thrs))) {
+	if (ch_st(x_pre, x_post, (0.6f * thrs), (1.4f * thrs)) && ch_st(y_pre, y_post, (0.6f * thrs), (1.4f * thrs)) && ch_st(z_pre, z_post, (0.6f * thrs), (1.4f * thrs))) {
 		status = 1;
 	}
 	turn_off_gyro();
@@ -549,7 +548,7 @@ return 0;
 
 //--------------------Check biases------------------------//
 uint8_t LSM6DS3::check_accel_biases(float bx, float by, float bz){
-	float thrs = 40e-3 * INS_G_VAL * 1.1; //typical 40mg zero-G level
+	float thrs = 40e-3f * INS_G_VAL * 1.1f; //typical 40mg zero-G level
 	if ((fabs(bx) > thrs) || (fabs(by) > thrs) || (fabs(bz) > thrs)){
 		return 0;
 	}
@@ -567,7 +566,7 @@ uint8_t LSM6DS3::self_test_accel(uint8_t mode){
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < LSM6DS3_ACCEL_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM6DS3_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(LSM6DS3_DISCARD_TIMEOUT);
 		x_pre += ax;
 		y_pre += ay;
@@ -595,7 +594,7 @@ uint8_t LSM6DS3::self_test_accel(uint8_t mode){
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < LSM6DS3_ACCEL_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM6DS3_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(LSM6DS3_DISCARD_TIMEOUT);
 		x_post += ax;
 		y_post += ay;
@@ -605,8 +604,8 @@ uint8_t LSM6DS3::self_test_accel(uint8_t mode){
 	y_post /= LSM6DS3_ACCEL_SELF_TEST_MEASURES;
 	z_post /= LSM6DS3_ACCEL_SELF_TEST_MEASURES;
 	// Define Threshold based on the Full-Scale value
-	float thrs_min = 60e-3 * INS_G_VAL;
-	float thrs_max = 1700e-3 * INS_G_VAL;
+	float thrs_min = 60e-3f * INS_G_VAL;
+	float thrs_max = 1700e-3f * INS_G_VAL;
 	// Check if values are bigger than the threshold
 	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
@@ -643,7 +642,7 @@ uint8_t LSM6DS3::discard_measures_accel(uint8_t number_of_measures, uint32_t tim
 uint8_t LSM6DS3::read_raw_thermo(){
 	uint8_t buffer[2];
 	readMultipleRegisters(_chipSelectPin, buffer, 2, LSM6DS3_OUT_TEMP_L);
-	temperature = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * 0.0625) + 25.0;
+	temperature = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * 0.0625f) + 25.0f;
 	return 1;
 }
 

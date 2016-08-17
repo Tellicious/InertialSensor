@@ -6,13 +6,13 @@
 //
 #include "INS_Baro.h"
 uint8_t INS_Baro::instanced=0;
-float INS_Baro::invP0=1.0/INS_BARO_DEFAULT_GROUND;
+float INS_Baro::invP0 = 1.0f / INS_BARO_DEFAULT_GROUND;
 
 //=====================================Constructor==========================================//
 INS_Baro::INS_Baro(InertialSensor &sensor, float &meas):_sens(sensor){
 	_press_p = &meas;
 	press = *_press_p;
-	invP0 = 1.0 / INS_BARO_DEFAULT_GROUND;
+	invP0 = 1.0f / INS_BARO_DEFAULT_GROUND;
 	instanced++;
 	instance = instanced;
 }
@@ -29,7 +29,7 @@ uint8_t INS_Baro::read(uint32_t timeout){
 uint8_t INS_Baro::read_altitude(uint32_t timeout){
 	if(_sens.read_baro(timeout)){
 		press = *_press_p;
-		altitude = 44330.76067152237 * (1 - pow((press*invP0), 0.190262371810727));
+		altitude = 44330.76067152237f * (1.0f - powf((press * invP0), 0.190262371810727f));
 		return 1;
 	}
 	return 0;
@@ -48,7 +48,7 @@ uint8_t INS_Baro::set_ground(float P0){
 uint8_t INS_Baro::auto_ground(uint8_t number_of_measures, uint32_t timeout){
 	float p0_tmp = 0;
 	for (uint8_t ii = 1; ii < number_of_measures; ii++){
-		if (! read(timeout)){
+		if (!read(timeout)){
 			return 0;
 		}
 		p0_tmp += press;

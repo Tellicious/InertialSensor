@@ -160,7 +160,7 @@ INS_Gyro::INS_Gyro(InertialSensor &sensor, float &meas_x, float &meas_y, float &
 //====================================Public Members=========================================//
 //---------------------------Read-----------------------------//
 uint8_t INS_Gyro::read(uint32_t timeout){
-	uint8_t res=_sens.read_gyro(timeout);
+	uint8_t res = _sens.read_gyro(timeout);
 	x = (float) _sx * (*_x_p) - bx;
 	y = (float) _sy * (*_y_p) - by;
 	z = (float) _sz * (*_z_p) - bz;
@@ -187,28 +187,28 @@ void INS_Gyro::sleep(){
 
 //-----------------------Calibrate---------------------------//
 uint8_t INS_Gyro::calibrate(uint8_t number_of_measures, uint32_t timeout){
-	float bx_tmp=0;
-	float by_tmp=0;
-	float bz_tmp=0;
-	bx=0;
-	by=0;
-	bz=0;
+	float bx_tmp = 0;
+	float by_tmp = 0;
+	float bz_tmp = 0;
+	bx = 0;
+	by = 0;
+	bz = 0;
 	// Discard the first n measures 
-	if(!_sens.discard_measures_gyro(INS_GYRO_DISCARDED_MEASURES,timeout)){
+	if(!_sens.discard_measures_gyro(INS_GYRO_DISCARDED_MEASURES, timeout)){
 		return 0;
 	}
-	for (uint8_t ii=0;ii<number_of_measures;ii++){
+	for (uint8_t ii = 0; ii < number_of_measures; ii++){
 		if(this->read(timeout)){
-			bx_tmp+=x;
-			by_tmp+=y;
-			bz_tmp+=z;
+			bx_tmp += x;
+			by_tmp += y;
+			bz_tmp += z;
 		}
 		else{
 			return 0;
 		}
 	}
-	bx=bx_tmp/number_of_measures;
-	by=by_tmp/number_of_measures;
-	bz=bz_tmp/number_of_measures;
-	return _sens.check_gyro_biases(bx,by,bz);
+	bx = bx_tmp / number_of_measures;
+	by = by_tmp / number_of_measures;
+	bz = bz_tmp / number_of_measures;
+	return _sens.check_gyro_biases(bx, by, bz);
 }

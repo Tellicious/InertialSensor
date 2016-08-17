@@ -5,7 +5,7 @@
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
 #include "INS_Thermo.h"
-uint8_t INS_Thermo::instanced=0;
+uint8_t INS_Thermo::instanced = 0;
 
 //=====================================Constructor==========================================//
 INS_Thermo::INS_Thermo(InertialSensor &sensor, float &meas):_sens(sensor){

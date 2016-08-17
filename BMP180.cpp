@@ -10,7 +10,7 @@
 #include "Arduino.h"
 #include <Wire.h>
 //========================================Chip Address============================================//
- #define BMP180_ADDR			0x77
+#define BMP180_ADDR				0x77
 //====================================Registers Addresses=========================================// 
 #define BMP180_CAL_AC1			0xAA
 #define BMP180_CAL_AC2			0xAC
@@ -53,7 +53,7 @@ void BMP180::readMultipleRegisters(uint8_t* buffer, uint8_t number_of_registers,
   	Wire.beginTransmission(BMP180_ADDR); //start transmission to the device
 	Wire.write(startRegister); //register address to read from
 	Wire.endTransmission();	//end transmission
-  	Wire.requestFrom((uint8_t) BMP180_ADDR, number_of_registers);	//request n byte
+  	Wire.requestFrom(BMP180_ADDR, number_of_registers);	//request n byte
   	while (number_of_registers--){
   		*buffer++ = Wire.read();		//read the incoming bytes
   	}
@@ -98,19 +98,19 @@ uint8_t BMP180::config_baro(uint8_t oversamp){
 	}
 	switch(oversamp){
 		case BMP180_OS_1:
-			_bmp180Mode = 0;
+			_bmp180OSS = 0;
 			break;
 		case BMP180_OS_2:
-			_bmp180Mode = 1;
+			_bmp180OSS = 1;
 			break;
 		case BMP180_OS_4:
-			_bmp180Mode = 2;
+			_bmp180OSS = 2;
 			break;
 		default:
-			_bmp180Mode = 3;
+			_bmp180OSS = 3;
 			break;
 	}
-	_bmp180_read_press_cmd = BMP180_READ_PRESS + (_bmp180Mode << 6);
+	_bmp180_read_press_cmd = BMP180_READ_PRESS + (_bmp180OSS << 6);
 	read_coefficients();
 	// Discard the first n measures
 	if(! discard_measures_baro(BMP180_DISCARDED_MEASURES, BMP180_DISCARD_TIMEOUT)){
@@ -118,7 +118,8 @@ uint8_t BMP180::config_baro(uint8_t oversamp){
 	}
 	if(! read_thermo_STATUS(BMP180_DISCARD_TIMEOUT)){
 		return 0;
-	}	
+	}
+	read_thermo_STATUS(BMP180_DISCARD_TIMEOUT);
 	return 1;
 }
 
@@ -126,34 +127,34 @@ uint8_t BMP180::config_baro(uint8_t oversamp){
 void BMP180::read_coefficients(){
 	uint8_t buf[2];
 	readMultipleRegisters(buf, 2, BMP180_CAL_AC1);
-    _bmp180_calib.AC1v = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.AC1v = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_AC2);
-    _bmp180_calib.AC2v = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.AC2v = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_AC3);
-    _bmp180_calib.AC3v = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.AC3v = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_AC4);
-    _bmp180_calib.AC4v = (uint16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.AC4v = (uint16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_AC5);
-    _bmp180_calib.AC5v = (uint16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.AC5v = (uint16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_AC6);
-    _bmp180_calib.AC6v = (uint16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.AC6v = (uint16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_B1);
-    _bmp180_calib.B1v = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.B1v = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_B2);
-    _bmp180_calib.B2v = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.B2v = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_MB);
-    _bmp180_calib.MBv = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.MBv = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_MC);
-    _bmp180_calib.MCv = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.MCv = (int16_t) ((buf[0] << 8) | buf [1]);
     readMultipleRegisters(buf, 2, BMP180_CAL_MD);
-    _bmp180_calib.MDv = (int16_t) ((buf[1] << 8) | buf [0]);
+    _bmp180_calib.MDv = (int16_t) ((buf[0] << 8) | buf [1]);
 }
 
 //------------------------Read data-------------------------//
 uint8_t BMP180::read_raw_baro(){
 	uint8_t buf[3];
 	readMultipleRegisters(buf, 3, BMP180_OUT_MSB);
-	_bmp180_calib.UP = ((buf[0] << 16) | (buf[1] << 8) | buf[2]) >> (8 - _bmp180Mode);
+	_bmp180_calib.UP = ((buf[0] << 16) | (buf[1] << 8) | buf[2]) >> (8 - _bmp180OSS);
 	return 1;
 }
 
@@ -168,12 +169,12 @@ uint8_t BMP180::compensate_baro(){
 	X1 = (_bmp180_calib.B2v * ((B6 * B6) >> 12)) >> 11;
 	X2 = (_bmp180_calib.AC2v * B6) >> 11;
 	X3 = X1 + X2;
-	B3 = (((((int32_t) _bmp180_calib.AC1v) * 4 + X3) << _bmp180Mode) + 2) >> 2;
+	B3 = (((((int32_t) _bmp180_calib.AC1v) * 4 + X3) << _bmp180OSS) + 2) >> 2;
 	X1 = (_bmp180_calib.AC3v * B6) >> 13;
 	X2 = (_bmp180_calib.B1v * ((B6 * B6) >> 12)) >> 16;
 	X3 = ((X1 + X2) + 2) >> 2;
 	B4 = (_bmp180_calib.AC4v * (uint32_t) (X3 + 32768)) >> 15;
-	B7 = ((uint32_t) (_bmp180_calib.UP - B3) * (50000 >> _bmp180Mode));
+	B7 = ((uint32_t) (_bmp180_calib.UP - B3)) * (50000 >> _bmp180OSS);
 	if (B7 < 0x80000000){
 		p = (B7 << 1) / B4;
 	}
@@ -183,7 +184,7 @@ uint8_t BMP180::compensate_baro(){
 	X1 = (p >> 8) * (p >> 8);
 	X1 = (X1 * 3038) >> 16;
 	X2 = (-7357 * p) >> 16;
-	press = (p + ((X1 + X2 + 3791) >> 4));
+	press = (p + ((X1 + X2 + 3791) >> 4)) * 0.01f;
 	return 1;
 }
 
@@ -247,7 +248,7 @@ uint8_t BMP180::read_raw_thermo(){
 	_bmp180_calib.UT = (uint16_t) ((buf[0] << 8) | buf[1]);
 	B5 = computeB5(_bmp180_calib.UT);
 	temperature = (B5 + 8) >> 4;
-	temperature *= 0.1;
+	temperature *= 0.1f;
 	return 1;
 }
 

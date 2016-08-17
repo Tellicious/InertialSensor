@@ -4,14 +4,26 @@
 //  Created by Andrea Vivani on 15/4/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+//
 #ifndef INERTIAL_SENSOR_H_
 #define INERTIAL_SENSOR_H_
+//==================================Platform definition=========================================//
+#define INS_ARDUINO
+//#define INS_CHIBIOS
+#ifdef INS_CHIBIOS
+#define SERIAL_INT (BaseSequentialStream*)&SDU1 //Serial interface output
+EventListener el_INS;
+flagsmask_t flags_INS;
+//chEvtRegisterMask((EventSource *)chnGetEventSource(&SDU1), &el_INS, EVENT_MASK(1)); // REMEMBER TO REGISTER THREAD TO THIS EVENT!!!
+#endif
+#ifdef INS_ARDUINO
 #include "Arduino.h"
+#endif
 //======================================Parameters=============================================//
-#define INS_G_VAL 		9.81	//magnitude of static accelerometer reading (the sensor is calibrated to return that value) in m/s^2
-#define INS_MAG_VAL		1.0		//magnitude of magnetometer reading, if 0 magnetometer is calibrated to return the value directly coming from the sensor in Gauss
-#define INS_TORAD		0.01745329251994329576923690768488
-#define INS_TODEG		57.29577951308232087679815481410517
+#define INS_G_VAL 		9.81f	//magnitude of static accelerometer reading (the sensor is calibrated to return that value) in m/s^2
+#define INS_MAG_VAL		1.0f		//magnitude of magnetometer reading, if 0 magnetometer is calibrated to return the value directly coming from the sensor in Gauss
+#define INS_TORAD		0.01745329251994329576923690768488f
+#define INS_TODEG		57.29577951308232087679815481410517f
 typedef enum{
 	X_FRONT_Z_UP,
 	X_LEFT_Z_UP,
@@ -65,16 +77,16 @@ class InertialSensor{
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout){return 0;}; //discards the first n measures after being called, timeout in us
 };
 //==================Include Sensors Libraries==================//
-#include "LSM6DS3.h"
+/*#include "LSM6DS3.h"
 #include "LSM9DS0.h"
-#include "LSM9DS1.h"
+#include "LSM9DS1.h"*/
 #include "L3GD20H.h"
-#include "HMC5983.h"
+#include "HMC5983.h"/*
 #include "LIS3MDL.h"
 #include "LPS25HB.h"
 #include "BMP180.h"
 #include "BMP280.h"
-#include "ADXL345.h"
+#include "ADXL345.h"*/
 //==================Include Generic Libraries==================//
 #include "INS_Gyro.h"
 #include "INS_Accel.h"

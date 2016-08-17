@@ -9,11 +9,10 @@
 #include "LPS25HB.h"
 #include "Arduino.h"
 #include <SPI.h>
-
 //====================================Registers Addresses=========================================// 
 #define LPS25HB_REF_P_XL	0x08
 #define LPS25HB_REF_P_L 	0x09
-#define LPS25HB_REF_P_L 	0x0A
+#define LPS25HB_REF_P_H 	0x0A
 #define LPS25HB_WHO_AM_I	0x0F
 #define LPS25HB_RES_CONF	0x10
 #define LPS25HB_CTRL1		0x20
@@ -33,7 +32,7 @@
 #define LPS25HB_THS_PL		0x30
 #define LPS25HB_THS_PH		0x31
 #define LPS25HB_RPDS_L		0x39
-#define LPS25HB_RPDS_L		0x3A
+#define LPS25HB_RPDS_H		0x3A
 //=======================================Constants=============================================// 
 #define LPS25HB_ID			0xBD
 #define LPS25HB_READ		0x80
@@ -53,22 +52,22 @@ uint8_t LPS25HB::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
 
 //------------Read multiple registers from the SPI--------------//
 void LPS25HB::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister) {
-  startRegister |= (LPS25HB_READ | LPS25HB_MULT);// register in multiple read mode
-  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  SPI.transfer(startRegister);		// send the command to read thisRegister
-  while (number_of_registers--){
-  	*buffer++ = SPI.transfer(0x00);
-  }
-  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-  return;
+	startRegister |= (LPS25HB_READ | LPS25HB_MULT);// register in multiple read mode
+	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
+	SPI.transfer(startRegister);		// send the command to read thisRegister
+	while (number_of_registers--){
+		*buffer++ = SPI.transfer(0x00);
+	}
+	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
+	return;
 }
 
 //---------------Write one register on the SPI-----------------//
 void LPS25HB::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
-  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  SPI.transfer(thisRegister); 		// send register location
-  SPI.transfer(thisValue);  		// send value to record into register
-  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
+	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
+	SPI.transfer(thisRegister); 		// send register location
+	SPI.transfer(thisValue);  		// send value to record into register
+	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
 }
 
 //=====================================Constructors==========================================//
@@ -200,7 +199,7 @@ uint8_t LPS25HB::status_baro(){
 uint8_t LPS25HB::discard_measures_baro(uint8_t number_of_measures, uint32_t timeout){
 	uint8_t count = 0;
 	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5)){
+	while (count < (number_of_measures * 0.5f)){
 		uint8_t STATUS_value = status_baro();
 		if (STATUS_value & (1 << 5)){
 			read_raw_baro();
@@ -223,7 +222,7 @@ uint8_t LPS25HB::read_raw_thermo(){
 	uint8_t buffer[2];
 	readMultipleRegisters(_chipSelectPin, buffer, 2, LPS25HB_TEMP_OUT_L);
 	int16_t temperature_tmp = (((int16_t) buffer[1] << 8) | buffer[0]);
-	temperature = 42.5 + (float) temperature_tmp / 480.0;
+	temperature = 42.5f + (float) temperature_tmp / 480.0f;
 	return 1;
 }
 
@@ -262,7 +261,7 @@ return 0;
 uint8_t LPS25HB::discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout){
 	uint8_t count = 0;
 	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5)){
+	while (count < (number_of_measures * 0.5f)){
 		uint8_t STATUS_value = status_baro();
 		if (STATUS_value & (1 << 4)){
 			read_raw_thermo();

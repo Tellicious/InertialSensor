@@ -9,7 +9,6 @@
 #include "LIS3MDL.h"
 #include "Arduino.h"
 #include <SPI.h>
-
 //====================================Registers Addresses=========================================// 
 #define LIS3MDL_OFFSET_X_REG_L	0x05
 #define LIS3MDL_OFFSET_X_REG_H	0x06
@@ -74,7 +73,7 @@ void LIS3MDL::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const u
 }
 
 //-----------------Check values for self-test-------------------//
-uint8_t LIS3MDL::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+uint8_t LIS3MDL::ch_st (const float val1, const float val2, const float lim1, const float lim2){
     if (fabs(lim1) > fabs(lim2)){
         return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
     }
@@ -121,16 +120,16 @@ uint8_t LIS3MDL::config_mag(uint8_t range_conf, uint8_t odr_conf){
 	writeRegister(_chipSelectPin, LIS3MDL_CTRL2, CTRL2_val);
 	switch (range_conf){
 		case (LIS3MDL_RANGE_4):
-			_sc_fact = 1.0f / 6842.0;
+			_sc_fact = 1.0f / 6842.0f;
 			break;
 		case (LIS3MDL_RANGE_8):
-			_sc_fact = 1.0f / 3421.0;
+			_sc_fact = 1.0f / 3421.0f;
 			break;
 		case (LIS3MDL_RANGE_12):
-			_sc_fact = 1.0f / 2281.0;
+			_sc_fact = 1.0f / 2281.0f;
 			break;
 		case (LIS3MDL_RANGE_16):
-			_sc_fact = 1.0f / 1711.0;
+			_sc_fact = 1.0f / 1711.0f;
 			break;
 		default:
 		return 2;
@@ -234,15 +233,15 @@ uint8_t LIS3MDL::self_test_mag(){
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < LIS3MDL_MAG_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LIS3MDL_MAG_SELF_TEST_MEASURES; ii++){
 		read_mag_STATUS(LIS3MDL_DISCARD_TIMEOUT);
 		x_pre += x;
 		y_pre += y;
 		z_pre += z;
 	}
-	x_pre /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0); // average and revert to FS = 12 Gauss
-	y_pre /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0); // average and revert to FS = 12 Gauss
-	z_pre /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0); // average and revert to FS = 12 Gauss
+	x_pre /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0f); // average and revert to FS = 12 Gauss
+	y_pre /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0f); // average and revert to FS = 12 Gauss
+	z_pre /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0f); // average and revert to FS = 12 Gauss
 	// Turn on self-test
 	turn_off_mag();
 	// Enable the self-test
@@ -258,19 +257,19 @@ uint8_t LIS3MDL::self_test_mag(){
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < LIS3MDL_MAG_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LIS3MDL_MAG_SELF_TEST_MEASURES; ii++){
 		read_mag_STATUS(LIS3MDL_DISCARD_TIMEOUT);
 		x_post += x;
 		y_post += y;
 		z_post += z;
 	}
-	x_post /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0); // average and revert to FS = 12 Gauss
-	y_post /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0); // average and revert to FS = 12 Gauss
-	z_post /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0); // average and revert to FS = 12 Gauss
-	float thrs_xy_min = 1.0;
-	float thrs_xy_max = 3.0;
-	float thrs_z_min = 0.1;
-	float thrs_z_max = 1.0;
+	x_post /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0f); // average and revert to FS = 12 Gauss
+	y_post /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0f); // average and revert to FS = 12 Gauss
+	z_post /= (LIS3MDL_MAG_SELF_TEST_MEASURES * _sc_fact * 2281.0f); // average and revert to FS = 12 Gauss
+	float thrs_xy_min = 1.0f;
+	float thrs_xy_max = 3.0f;
+	float thrs_z_min = 0.1f;
+	float thrs_z_max = 1.0f;
 	if (ch_st(x_pre, x_post, thrs_xy_min, thrs_xy_max) && ch_st(y_pre, y_post, thrs_xy_min, thrs_xy_max) && ch_st(z_pre, z_post, thrs_z_min, thrs_z_max)) {
 		status = 1;
 	}

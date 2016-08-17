@@ -4,6 +4,13 @@
 //  Created by Andrea Vivani on 23/2/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+
+#ifndef L3GD20H_H_
+#define L3GD20H_H_
+#include "InertialSensor.h"
+#ifdef INS_ARDUINO
+#include <SPI.h>
+#endif
 //======================================Parameters=============================================//
 #define L3GD20H_GYRO_SELF_TEST_MEASURES 10 	//number of samples to be averaged when performing gyro self-test
 #define L3GD20H_DISCARDED_MEASURES		5	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
@@ -33,16 +40,15 @@
 #define L3GD20H_RANGE_500			0x10
 #define L3GD20H_RANGE_2000			0x20
 
-
-#ifndef L3GD20H_H_
-#define L3GD20H_H_
-#include "InertialSensor.h"
-#include <SPI.h>
-
 class L3GD20H: public InertialSensor {
 	public:
+#ifdef INS_ARDUINO
 		L3GD20H (uint8_t CS_pin);	//constructor
 		L3GD20H (uint8_t CS_pin, uint8_t DRDY_pin);	//constructor with Data ready pin
+#elif INS_CHIBIOS
+		L3GD20H (SPIDriver* SPI, ioportid_t gpio_CS_CS, uin8_t CS_pin);	//constructor
+		L3GD20H (SPIDriver* SPI, ioportid_t gpio_CS, uin8_t CS_pin, ioportid_t gpio_DRDY, uint8_t DRDY_pin);	//constructor stm32_gpio_t*
+#endif
 		virtual void init(); //initializes pins and variables
 		float x, y, z;	//output data
 		uint8_t config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq); //configure the gyroscope
@@ -61,10 +67,16 @@ class L3GD20H: public InertialSensor {
 	private:
 		float _sc_fact;		//scale factor
 		uint8_t _chipSelectPin, _DRDY_pin;	//ChipSelectPin and Data Ready pin
+#ifdef INS_CHIBIOS
+		SPIDriver* _SPI_int;
+		ioportid_t _gpio_CS;
+		ioportid_t _gpio_DRDY;
+		SPIConfig _spicfg;
+#endif
 		uint8_t _CTRL1_val; //value of the register, used when powering up and down the sensor
 		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
 		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
 		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const double val1, const double val2, const double lim1, const double lim2);
+		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
 };
 #endif

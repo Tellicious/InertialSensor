@@ -36,6 +36,7 @@
 //=======================================Constants=============================================// 
 #define BMP280_ID				0x58
 #define BMP280_READ				0x80
+#define BMP280_WRITE			0x7F
 
 //==================================Auxiliary Functions========================================//
 //---------------Read one register from the SPI-----------------//
@@ -63,6 +64,7 @@ void BMP280::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8
 
 //---------------Write one register on the SPI-----------------//
 void BMP280::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
+	thisRegister &= BMP280_WRITE;
 	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
 	SPI.transfer(thisRegister); 		// send register location
 	SPI.transfer(thisValue);  		// send value to record into register
@@ -88,7 +90,7 @@ void BMP280::baro_cal_64_bit(int32_t adc_P){
   	var1 = (((int64_t) _bmp280_calib.dig_P9) * (_bmp280_calib.p >> 13) * (_bmp280_calib.p >> 13)) >> 25;
   	var2 = (((int64_t) _bmp280_calib.dig_P8) * _bmp280_calib.p) >> 19;
  	_bmp280_calib.p = ((_bmp280_calib.p + var1 + var2) >> 8) + (((int64_t) _bmp280_calib.dig_P7) << 4);
-  	press = (float) _bmp280_calib.p * 0.00390625;
+  	press = (float) _bmp280_calib.p * 0.0000390625f;
 	return;
 }
 
@@ -117,7 +119,7 @@ void BMP280::baro_cal_32_bit(int32_t adc_P){
 	var1 = (((int32_t) _bmp280_calib.dig_P9) * ((int32_t) (((_bmp280_calib.p >> 3) * (_bmp280_calib.p >> 3)) >> 13))) >> 12;
 	var2 = (((int32_t) (_bmp280_calib.p >> 2)) * ((int32_t) _bmp280_calib.dig_P8)) >> 13;
 	_bmp280_calib.p = (uint32_t)((int32_t) _bmp280_calib.p + ((var1 + var2 + _bmp280_calib.dig_P7) >> 4));
-	press = (float) _bmp280_calib.p;
+	press = (float) _bmp280_calib.p * 0.01f;
 	return;
 }
 
@@ -128,7 +130,7 @@ void BMP280::thermo_cal(int32_t adc_T){
 	var2  = (((((adc_T >> 4) - ((int32_t) _bmp280_calib.dig_T1)) * ((adc_T >> 4) - ((int32_t) _bmp280_calib.dig_T1))) >> 12) * ((int32_t) _bmp280_calib.dig_T3)) >> 14;
 	_bmp280_calib.t_fine = var1 + var2;
 	temperature = (_bmp280_calib.t_fine * 5 + 128) >> 8;
-	temperature *= 0.01;
+	temperature *= 0.01f;
 	return;
 }
 
@@ -138,8 +140,8 @@ BMP280::BMP280 (uint8_t CS_pin):InertialSensor(){
 }
 
 void BMP280::init(){
-	pinMode(_chipSelectPin,OUTPUT);
-	digitalWrite(_chipSelectPin,HIGH);
+	pinMode(_chipSelectPin, OUTPUT);
+	digitalWrite(_chipSelectPin, HIGH);
 	press = 0;
 	temperature = 0;
 }
@@ -159,7 +161,6 @@ uint8_t BMP280::config_baro(uint8_t standy_time, uint8_t mode, uint8_t press_ove
 	writeRegister(_chipSelectPin, BMP280_CONFIG, CONFIG_val);
 	// selected temp oversampling, pressure oversampling and mode
 	_CTRL_MEAS_val = temp_oversamp | press_oversamp | mode;
-	writeRegister(_chipSelectPin, BMP280_CTRL_MEAS, _CTRL_MEAS_val);
 	writeRegister(_chipSelectPin, BMP280_CTRL_MEAS, _CTRL_MEAS_val);
 	delay(20);
 	read_coefficients();
@@ -217,7 +218,7 @@ void BMP280::turn_off_baro(){
 uint8_t BMP280::read_raw_baro(){
 	uint8_t buf[3];
   	readMultipleRegisters(_chipSelectPin, buf, 3, BMP280_PRESSURE_MSB);
-  	int32_t adc_P = (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
+  	int32_t adc_P = (int32_t) (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
 	baro_cal_64_bit(adc_P);
   	return 1;
 }
@@ -226,7 +227,7 @@ uint8_t BMP280::read_raw_baro(){
 uint8_t BMP280::read_raw_baro_32(){
 	uint8_t buf[3];
 	readMultipleRegisters(_chipSelectPin, buf, 3, BMP280_PRESSURE_MSB);
-	int32_t adc_P = (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
+	int32_t adc_P = (int32_t) (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
 	baro_cal_32_bit(adc_P);
 	return 1;
 }
@@ -235,8 +236,8 @@ uint8_t BMP280::read_raw_baro_32(){
 uint8_t BMP280::read_baro_compensated(){
 	uint8_t buf[6];
 	readMultipleRegisters(_chipSelectPin, buf, 6, BMP280_PRESSURE_MSB);
-	int32_t adc_P = (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
-	int32_t adc_T = (buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4);
+	int32_t adc_P = (int32_t) (buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4);
+	int32_t adc_T = (int32_t) (buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4);
 	// Temperature 
 	thermo_cal(adc_T);
 	// Pressure

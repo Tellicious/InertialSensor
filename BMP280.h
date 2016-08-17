@@ -4,6 +4,10 @@
 //  Created by Andrea Vivani on 01/11/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+#ifndef BMP280_H_
+#define BMP280_H_
+#include "InertialSensor.h"
+#include <SPI.h>
 //======================================Parameters=============================================//
 #define BMP280_DISCARDED_MEASURES	10	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define BMP280_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -39,11 +43,6 @@
 //======================Mode========================//
 #define BMP280_NORMAL_MODE 	0X03
 #define BMP280_FORCED_MODE 	0X01
-
-#ifndef BMP280_H_
-#define BMP280_H_
-#include "InertialSensor.h"
-#include <SPI.h>
 
 //================Calibration Data==================//
 typedef struct{

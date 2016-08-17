@@ -4,6 +4,10 @@
 //  Created by Andrea Vivani on 18/7/15.
 //  Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
+#ifndef LSM6DS3_H_
+#define LSM6DS3_H_
+#include "InertialSensor.h"
+#include <SPI.h>
 //======================================Parameters=============================================//
 #define LSM6DS3_GYRO_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing gyroscope self-test
 #define LSM6DS3_ACCEL_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing accelerometer self-test
@@ -57,11 +61,6 @@
 #define LSM6DS3_HP_A_ODR_9			0x40
 #define LSM6DS3_HP_A_ODR_400		0x60
 
-#ifndef LSM6DS3_H_
-#define LSM6DS3_H_
-#include "InertialSensor.h"
-#include <SPI.h>
-
 class LSM6DS3: public InertialSensor{
 	public:
 		LSM6DS3 (uint8_t CS_pin);	//constructor
@@ -110,6 +109,6 @@ class LSM6DS3: public InertialSensor{
 		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
 		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
 		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const double val1, const double val2, const double lim1, const double lim2);
+		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
 };
 #endif

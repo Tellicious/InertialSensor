@@ -292,12 +292,13 @@ uint8_t INS_Accel::cal_compute(INS_Accel_cal calibration_mode, uint8_t print_fla
 }
 
 //------------------Complete calibration---------------------//
+#ifdef INS_ARDUINO
 uint8_t INS_Accel::calibrate(uint8_t number_of_measures, INS_Accel_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
 	Serial.println();
 	Serial.println("Starting calibration...");
 	initialize_calibration(number_of_measures);
 	Serial.println("Press a key to acquire a sample");
-	while(_cal_count<number_of_measures){
+	while(_cal_count < number_of_measures){
 		if (Serial.available()>0){
             Serial.read();
 			cal_acquire(timeout);
@@ -313,14 +314,39 @@ uint8_t INS_Accel::calibrate(uint8_t number_of_measures, INS_Accel_cal calibrati
 	Serial.println("Done acquisition, now computing...");
 	return cal_compute(calibration_mode, print_flag);
 }
+#elif INS_CHIBIOS
+uint8_t INS_Accel::calibrate(uint8_t number_of_measures, INS_Accel_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
+	chprintf(SERIAL_INT, "\r\nStarting calibration...\r\n");
+	initialize_calibration(number_of_measures);
+	chprintf(SERIAL_INT, "Press a key to acquire a sample\r\n");
+	while(_cal_count < number_of_measures){
+		chEvtWaitOne(EVENT_MASK(1));
+		chSysLock();
+		flags_INS = chEvtGetAndClearFlags(&el_INS);
+		chSysUnlock();
+		if (flags_INS & CHN_INPUT_AVAILABLE){
+			msg_t charbuf;
+			do{
+				charbuf = chnGetTimeout(SERIAL_INT, TIME_IMMEDIATE);
+			}
+			while (charbuf != Q_TIMEOUT);
+			cal_acquire(timeout);
+			chprintf(SERIAL_INT,"Sample acquired! Acc x: %-9.4f, Acc y: %-9.4f, Acc z: %-9.4\r\nPress a key to acquire a sample\r\n", x, y ,z);
+		}
+	}
+	chprintf(SERIAL_INT, "Done acquisition, now computing...\r\n");
+	return cal_compute(calibration_mode, print_flag);
+}
+#endif
 
 //-------------Complete calibration with average-------------//
+#ifdef INS_ARDUINO
 uint8_t INS_Accel::calibrate_average(uint8_t number_of_measures, uint8_t average_length, INS_Accel_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
 	Serial.println();
 	Serial.println("Starting calibration with averaged values...");
 	initialize_calibration(number_of_measures);
 	Serial.println("Press a key to acquire a sample");
-	while(_cal_count<number_of_measures){
+	while(_cal_count < number_of_measures){
 		if (Serial.available()>0){
             Serial.read();
 			cal_acquire_averaged(average_length, timeout);
@@ -336,10 +362,35 @@ uint8_t INS_Accel::calibrate_average(uint8_t number_of_measures, uint8_t average
 	Serial.println("Done acquisition, now computing...");
 	return cal_compute(calibration_mode, print_flag);
 }
+#elif INS_CHIBIOS
+uint8_t INS_Accel::calibrate_average(uint8_t number_of_measures, uint8_t average_length, INS_Mag_cal calibration_mode, uint32_t timeout, uint8_t print_flag){
+		chprintf(SERIAL_INT, "\r\nStarting calibration with averaged values...\r\n");
+	initialize_calibration(number_of_measures);
+	chprintf(SERIAL_INT, "Press a key to acquire a sample\r\n");
+	while(_cal_count < number_of_measures){
+		chEvtWaitOne(EVENT_MASK(1));
+		chSysLock();
+		flags_INS = chEvtGetAndClearFlags(&el_INS);
+		chSysUnlock();
+		if (flags_INS & CHN_INPUT_AVAILABLE){
+			msg_t charbuf;
+			do{
+				charbuf = chnGetTimeout(SERIAL_INT, TIME_IMMEDIATE);
+			}
+			while (charbuf != Q_TIMEOUT);
+			cal_acquire_averaged(average_length, timeout);
+			chprintf(SERIAL_INT,"Sample acquired! Acc x: %-9.4f, Acc y: %-9.4f, Acc z: %-9.4\r\nPress a key to acquire a sample\r\n", x, y ,z);
+		}
+	}
+	chprintf(SERIAL_INT, "Done acquisition, now computing...\r\n");
+	return cal_compute(calibration_mode, print_flag);
+}
+#endif
 
 //====================================Private Members=========================================//
 //--------------------Print cal values-----------------------//
 void INS_Accel::print_calibration_values(){
+#ifdef INS_ARDUINO
 	Serial.println();
 	Serial.println("Scale factors matrix:");
 	// first row
@@ -370,11 +421,17 @@ void INS_Accel::print_calibration_values(){
 	Serial.print(", Bz: ");
 	Serial.println(bz,4);
     Serial.println();
+#elif INS_CHIBIOS
+	chprintf(SERIAL_INT, "\r\nScale factors matrix:\r\n");
+	chprintf(SERIAL_INT, "%-9.4f\t%-9.4f\t%-9.4f\r\n%-9.4f\t%-9.4f\t%-9.4f\r\n%-9.4f\t%-9.4f\t%-9.4f\r\n", s11, s12, s13, s12, s22, s23, s13, s23, s33);
+	chprintf(SERIAL_INT, "\r\nBias values:\r\n");
+	chprintf(SERIAL_INT, "Bx: %-9.4f, By: %-9.4f, Bz: %-9.4f\r\n\r\n", bx, by, bz);
+#endif
 }
 
 //-------------------Reset data matrix---------------------//
 void INS_Accel::reset_data_matrix(){
 	MatrixXf TMP(1,1,0);
-	_data=TMP;
+	_data = TMP;
 }
 

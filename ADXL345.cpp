@@ -9,7 +9,6 @@
 #include "ADXL345.h"
 #include "Arduino.h"
 #include <SPI.h>
-
 //====================================Registers Addresses=========================================// 
 #define ADXL345_DEVID 			0x00 
 #define ADXL345_THRESH_TAP 		0x1D 
@@ -79,7 +78,7 @@ void ADXL345::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const u
 }
 
 //-----------------Check values for self-test-------------------//
-uint8_t ADXL345::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+uint8_t ADXL345::ch_st (const float val1, const float val2, const float lim1, const float lim2){
     if (fabs(lim1) > fabs(lim2)){
         return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
     }
@@ -116,12 +115,14 @@ void ADXL345::init(){
 uint8_t ADXL345::config_accel(uint8_t accel_range, uint8_t accel_odr){
 	init();
 	//
+	// Set scale factor
+	_sc_fact = INS_G_VAL / 256.0f;
+	//
 	// Trash the first reading
 	readRegister(_chipSelectPin, ADXL345_DEVID);
 	//
 	// Check if the device ID is correct
 	if (readRegister(_chipSelectPin, ADXL345_DEVID) != ADXL345_ID){
-		delay(200);
 		return 0;
 	}
 	//
@@ -137,19 +138,24 @@ uint8_t ADXL345::config_accel(uint8_t accel_range, uint8_t accel_odr){
 	uint8_t INT_MAP_val = 0x7F;
 	writeRegister(_chipSelectPin, ADXL345_INT_MAP, INT_MAP_val);
 	//
+	// Reset offsets
+	writeRegister(_chipSelectPin, ADXL345_OFSX, 0x00);
+	writeRegister(_chipSelectPin, ADXL345_OFSY, 0x00);
+	writeRegister(_chipSelectPin, ADXL345_OFSZ, 0x00);
+	//
 	// No self-test, 4-wires SPI, selected range 
 	uint8_t DATA_FORMAT_val = (1 << 3) | accel_range;
 	writeRegister(_chipSelectPin, ADXL345_DATA_FORMAT, DATA_FORMAT_val);
 	//
 	// Turn on the accel 
-	uint8_t POWER_CTL_val = (1 << 3);
-	writeRegister(_chipSelectPin, ADXL345_POWER_CTL, POWER_CTL_val);
+	_POWER_CTL_val = (1 << 3);
+	writeRegister(_chipSelectPin, ADXL345_POWER_CTL, _POWER_CTL_val);
 	//
 	// Discard the first n accel measures
 	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES, ADXL345_DISCARD_TIMEOUT)){
-		delay(200);
 		return 0;
 	}
+	delay(200);
 	return 1;
 }
 
@@ -169,9 +175,9 @@ void ADXL345::turn_off_accel(){
 uint8_t ADXL345::read_raw_accel(){
 	uint8_t buffer[6];
 	readMultipleRegisters(_chipSelectPin, buffer, 6, ADXL345_DATAX0);
-	x = (float) (((int16_t) (buffer[0] << 8) | buffer[1]) * _sc_fact);
-	y = (float) (((int16_t) (buffer[2] << 8) | buffer[3]) * _sc_fact);
-	z = (float) (((int16_t) (buffer[4] << 8) | buffer[5]) * _sc_fact);
+	x = (float) ((int16_t) ((buffer[1] << 8) | buffer[0]) * _sc_fact);
+	y = (float) ((int16_t) ((buffer[3] << 8) | buffer[2]) * _sc_fact);
+	z = (float) ((int16_t) ((buffer[5] << 8) | buffer[4]) * _sc_fact);
 	return 1;
 }
 
@@ -209,7 +215,7 @@ return 0;
 
 //--------------------Check biases------------------------//
 uint8_t ADXL345::check_accel_biases(float bx, float by, float bz){
-	float thrs = 150e-3 * INS_G_VAL; //typical 40mg zero-G level
+	float thrs = 150e-3f * INS_G_VAL; //typical 40mg zero-G level
 	if ((fabs(bx) > thrs) || (fabs(by) > thrs) || (fabs(bz) > thrs)){
 		return 0;
 	}
@@ -220,14 +226,14 @@ uint8_t ADXL345::check_accel_biases(float bx, float by, float bz){
 uint8_t ADXL345::self_test_accel(){
 	uint8_t status = 0;
 	// Discard the first n measures
-	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES_ST, ADXL345_DISCARD_TIMEOUT)){
+	if(!discard_measures_accel(ADXL345_DISCARDED_MEASURES_ST, ADXL345_DISCARD_TIMEOUT)){
 		return 0;
 	}
 	// Average n samples
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < ADXL345_ACCEL_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < ADXL345_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(ADXL345_DISCARD_TIMEOUT);
 		x_pre += x;
 		y_pre += y;
@@ -242,14 +248,14 @@ uint8_t ADXL345::self_test_accel(){
 	writeRegister(_chipSelectPin, ADXL345_DATA_FORMAT, (DATA_FORMAT_val | (1 << 7)));
 	turn_on_accel();
 	// Discard the first n measures
-	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES_ST,ADXL345_DISCARD_TIMEOUT)){
+	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES_ST, ADXL345_DISCARD_TIMEOUT)){
 		return 0;
 	}
 	// Average n samples
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < ADXL345_ACCEL_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < ADXL345_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(ADXL345_DISCARD_TIMEOUT);
 		x_post += x;
 		y_post += y;
@@ -259,8 +265,16 @@ uint8_t ADXL345::self_test_accel(){
 	y_post /= ADXL345_ACCEL_SELF_TEST_MEASURES;
 	z_post /= ADXL345_ACCEL_SELF_TEST_MEASURES;
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, 0.7, 1.0) && ch_st(y_pre, y_post, 1.5, 1.9) && ch_st(z_pre, z_post, 1.4, 2.0)) {
+	if (ch_st(x_pre, x_post, 10.4f, 17.4f) && ch_st(y_pre, y_post, 10.4f, 17.4f) && ch_st(z_pre, z_post, 13.5f, 19.7f)) {
 		status = 1;
+	}
+	else {
+		Serial.println(x_pre);
+		Serial.println(x_post);
+		Serial.println(y_pre);
+		Serial.println(y_post);
+		Serial.println(z_pre);
+		Serial.println(z_post);
 	}
 	turn_off_accel();
 	writeRegister(_chipSelectPin, ADXL345_DATA_FORMAT, DATA_FORMAT_val);

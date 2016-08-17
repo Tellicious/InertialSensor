@@ -5,11 +5,9 @@
 // Created by Andrea Vivani on 11/7/15.
 // Copyright (c) 2015 Andrea Vivani. All rights reserved.
 //
-
 #include "LSM9DS1.h"
 #include "Arduino.h"
 #include <SPI.h>
-
 //====================================Registers Addresses=========================================// 
 //ACCELEROMETER AND GYROSCOPE
 #define LSM9DS1_ACT_THS 		0x04
@@ -91,6 +89,7 @@
 #define LSM9DS1_ID_M		0x3D
 #define LSM9DS1_READ		0x80
 #define LSM9DS1_MULT		0x40
+
 //==================================Auxiliary Functions========================================//
 //---------------Read one register from the SPI-----------------//
 uint8_t LSM9DS1::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
@@ -137,7 +136,7 @@ void LSM9DS1::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const u
 }
 
 //-----------------Check values for self-test-------------------//
-uint8_t LSM9DS1::ch_st (const double val1, const double val2, const double lim1, const double lim2){
+uint8_t LSM9DS1::ch_st (const float val1, const float val2, const float lim1, const float lim2){
     if (fabs(lim1) > fabs(lim2)){
         return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
     }
@@ -249,13 +248,13 @@ uint8_t LSM9DS1::config_accel_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t
 	// Selected gyro ODR and range
 	switch (gyro_range){
 		case (LSM9DS1_RANGE_G_245):
-			_sc_fact_g = 8.75e-3 * INS_TORAD;
+			_sc_fact_g = 8.75e-3f * INS_TORAD;
 			break;
 		case (LSM9DS1_RANGE_G_500):
-			_sc_fact_g = 17.5e-3 * INS_TORAD;
+			_sc_fact_g = 17.5e-3f * INS_TORAD;
 			break;
 		case (LSM9DS1_RANGE_G_2000):
-			_sc_fact_g = 70e-3 * INS_TORAD;
+			_sc_fact_g = 70e-3f * INS_TORAD;
 			break;
 		default:
 			return 2;
@@ -272,16 +271,16 @@ uint8_t LSM9DS1::config_accel_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t
 	// selected accelerometer ODR, range and auto anti-aliasing
 	switch (accel_range){
 		case (LSM9DS1_RANGE_A_2):
-			_sc_fact_a = INS_G_VAL * 0.00006103515625;
+			_sc_fact_a = INS_G_VAL * 0.00006103515625f;
 			break;
 		case (LSM9DS1_RANGE_A_4):
-			_sc_fact_a = INS_G_VAL * 0.0001220703125;
+			_sc_fact_a = INS_G_VAL * 0.0001220703125f;
 			break;
 		case (LSM9DS1_RANGE_A_8):
-			_sc_fact_a = INS_G_VAL * 0.000244140625;
+			_sc_fact_a = INS_G_VAL * 0.000244140625f;
 			break;
 		case (LSM9DS1_RANGE_A_16):
-			_sc_fact_a = INS_G_VAL * 0.000732421875;
+			_sc_fact_a = INS_G_VAL * 0.000732421875f;
 			break;
 		default:
 			return 2;
@@ -377,14 +376,14 @@ return 0;
 uint8_t LSM9DS1::check_gyro_biases(float bx, float by, float bz){
 // Define Threshold based on Full-Scale value
 	float thrs;
-	if ((_sc_fact_g - 8.75e-3 * INS_TORAD) < 1e-5){
-		thrs = 10 * INS_TORAD * 1.2; //typical 10dps offset
+	if ((_sc_fact_g - 8.75e-3f * INS_TORAD) < 1e-5f){
+		thrs = 10 * INS_TORAD * 1.2f; //typical 10dps offset
 	}
-	else if ((_sc_fact_g - 17.5e-3 * INS_TORAD) < 1e-5){
-		thrs = 15 * INS_TORAD * 1.2;	//typical 15dps offset
+	else if ((_sc_fact_g - 17.5e-3f * INS_TORAD) < 1e-5f){
+		thrs = 15 * INS_TORAD * 1.2f;	//typical 15dps offset
 	}
-	else if ((_sc_fact_g - 70e-3 * INS_TORAD) < 1e-5){
-		thrs = 30 * INS_TORAD * 1.2;	//typical 25dps offset
+	else if ((_sc_fact_g - 70e-3f * INS_TORAD) < 1e-5f){
+		thrs = 30 * INS_TORAD * 1.2f;	//typical 25dps offset
 	}
 	else {
 		return 0;
@@ -411,7 +410,7 @@ uint8_t LSM9DS1::self_test_gyro(){
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < LSM9DS1_GYRO_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM9DS1_GYRO_SELF_TEST_MEASURES; ii++){
 		read_gyro_STATUS(LSM9DS1_DISCARD_TIMEOUT);
 		x_pre += gx;
 		y_pre += gy;
@@ -433,7 +432,7 @@ uint8_t LSM9DS1::self_test_gyro(){
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < LSM9DS1_GYRO_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM9DS1_GYRO_SELF_TEST_MEASURES; ii++){
 		read_gyro_STATUS(LSM9DS1_DISCARD_TIMEOUT);
 		x_post += gx;
 		y_post += gy;
@@ -444,20 +443,20 @@ uint8_t LSM9DS1::self_test_gyro(){
 	z_post /= LSM9DS1_GYRO_SELF_TEST_MEASURES;
 	// Define threshold based on the Full-Scale value
 	float thrs;
-	if ((_sc_fact_g - 8.75e-3 * INS_TORAD) < 1e-5){
+	if ((_sc_fact_g - 8.75e-3f * INS_TORAD) < 1e-5f){
 		thrs = 95 * INS_TORAD; 
 	}
-	else if ((_sc_fact_g - 17.5e-3 * INS_TORAD) < 1e-5){
+	else if ((_sc_fact_g - 17.5e-3f * INS_TORAD) < 1e-5f){
 		thrs = 190 * INS_TORAD;
 	}
-	else if ((_sc_fact_g - 70e-3 * INS_TORAD) < 1e-5){
+	else if ((_sc_fact_g - 70e-3f * INS_TORAD) < 1e-5f){
 		thrs = 380 * INS_TORAD;
 	}
 	else {
 		return 0;
 	}
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(y_pre, y_post, (0.6 * thrs), (1.4 * thrs)) && ch_st(z_pre, z_post, (0.6 * thrs), (1.4 * thrs))) {
+	if (ch_st(x_pre, x_post, (0.6f * thrs), (1.4f * thrs)) && ch_st(y_pre, y_post, (0.6f * thrs), (1.4f * thrs)) && ch_st(z_pre, z_post, (0.6f * thrs), (1.4f * thrs))) {
 		status = 1;
 	}
 	turn_off_gyro();
@@ -541,7 +540,7 @@ return 0;
 
 //--------------------Check biases------------------------//
 uint8_t LSM9DS1::check_accel_biases(float bx, float by, float bz){
-	float thrs = 90e-3 * INS_G_VAL * 1.1; //typical 90mg zero-G level
+	float thrs = 90e-3f * INS_G_VAL * 1.1f; //typical 90mg zero-G level
 	if ((fabs(bx) > thrs) || (fabs(by) > thrs) || (fabs(bz) > thrs)){
 		return 0;
 	}
@@ -559,7 +558,7 @@ uint8_t LSM9DS1::self_test_accel(){
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < LSM9DS1_ACCEL_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM9DS1_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(LSM9DS1_DISCARD_TIMEOUT);
 		x_pre += ax;
 		y_pre += ay;
@@ -581,7 +580,7 @@ uint8_t LSM9DS1::self_test_accel(){
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < LSM9DS1_ACCEL_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM9DS1_ACCEL_SELF_TEST_MEASURES; ii++){
 		read_accel_STATUS(LSM9DS1_DISCARD_TIMEOUT);
 		x_post += ax;
 		y_post += ay;
@@ -591,8 +590,8 @@ uint8_t LSM9DS1::self_test_accel(){
 	y_post /= LSM9DS1_ACCEL_SELF_TEST_MEASURES;
 	z_post /= LSM9DS1_ACCEL_SELF_TEST_MEASURES;
 	// Define Threshold based on the Full-Scale value
-	float thrs_min = 60e-3 * INS_G_VAL;
-	float thrs_max = 1700e-3 * INS_G_VAL;
+	float thrs_min = 60e-3f * INS_G_VAL;
+	float thrs_max = 1700e-3f * INS_G_VAL;
 	// Check if values are bigger than the threshold
 	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
@@ -640,16 +639,16 @@ uint8_t LSM9DS1::config_mag(uint8_t range_conf, uint8_t odr_conf){
 	writeRegister(_chipSelectPin_M, LSM9DS1_CTRL_REG2_M, CTRL2_val);
 	switch (range_conf){
 		case (LSM9DS1_RANGE_M_4):
-			_sc_fact_m = 1.0f / 6842.0;
+			_sc_fact_m = 1.0f / 6842.0f;
 			break;
 		case (LSM9DS1_RANGE_M_8):
-			_sc_fact_m = 1.0f / 3421.0;
+			_sc_fact_m = 1.0f / 3421.0f;
 			break;
 		case (LSM9DS1_RANGE_M_12):
-			_sc_fact_m = 1.0f / 2281.0;
+			_sc_fact_m = 1.0f / 2281.0f;
 			break;
 		case (LSM9DS1_RANGE_M_16):
-			_sc_fact_m = 1.0f / 1711.0;
+			_sc_fact_m = 1.0f / 1711.0f;
 			break;
 		default:
 		return 2;
@@ -743,15 +742,15 @@ uint8_t LSM9DS1::self_test_mag(){
 	float x_pre = 0;
 	float y_pre = 0;
 	float z_pre = 0;
-	for (int ii = 0; ii < LSM9DS1_MAG_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM9DS1_MAG_SELF_TEST_MEASURES; ii++){
 		read_mag_STATUS(LSM9DS1_DISCARD_TIMEOUT);
 		x_pre += mx;
 		y_pre += my;
 		z_pre += mz;
 	}
-	x_pre /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0); // average and revert to FS = 12 Gauss
-	y_pre /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0); // average and revert to FS = 12 Gauss
-	z_pre /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0); // average and revert to FS = 12 Gauss
+	x_pre /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0f); // average and revert to FS = 12 Gauss
+	y_pre /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0f); // average and revert to FS = 12 Gauss
+	z_pre /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0f); // average and revert to FS = 12 Gauss
 	// Turn on self-test
 	turn_off_mag();
 	// Enable the self-test
@@ -766,19 +765,19 @@ uint8_t LSM9DS1::self_test_mag(){
 	float x_post = 0;
 	float y_post = 0;
 	float z_post = 0;
-	for (int ii = 0; ii < LSM9DS1_MAG_SELF_TEST_MEASURES; ii++){
+	for (uint8_t ii = 0; ii < LSM9DS1_MAG_SELF_TEST_MEASURES; ii++){
 		read_mag_STATUS(LSM9DS1_DISCARD_TIMEOUT);
 		x_post += mx;
 		y_post += my;
 		z_post += mz;
 	}
-	x_post /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0); // average and revert to FS = 12 Gauss
-	y_post /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0); // average and revert to FS = 12 Gauss
-	z_post /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0); // average and revert to FS = 12 Gauss
-	float thrs_xy_min = 1.0;
-	float thrs_xy_max = 3.0;
-	float thrs_z_min = 0.1;
-	float thrs_z_max = 1.0;
+	x_post /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0f); // average and revert to FS = 12 Gauss
+	y_post /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0f); // average and revert to FS = 12 Gauss
+	z_post /= (LSM9DS1_MAG_SELF_TEST_MEASURES * _sc_fact_m * 2281.0f); // average and revert to FS = 12 Gauss
+	float thrs_xy_min = 1.0f;
+	float thrs_xy_max = 3.0f;
+	float thrs_z_min = 0.1f;
+	float thrs_z_max = 1.0f;
 	if (ch_st(x_pre, x_post, thrs_xy_min, thrs_xy_max) && ch_st(y_pre, y_post, thrs_xy_min, thrs_xy_max) && ch_st(z_pre, z_post, thrs_z_min, thrs_z_max)) {
 		status = 1;
 	}
@@ -804,7 +803,7 @@ uint8_t LSM9DS1::status_mag(){
 uint8_t LSM9DS1::discard_measures_mag(uint8_t number_of_measures, uint32_t timeout){
 	uint8_t count = 0;
 	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5)){
+	while (count < (number_of_measures * 0.5f)){
 		uint8_t STATUS_value = status_mag();
 		if (STATUS_value & (1 << 7)){
 			read_raw_mag();
@@ -826,8 +825,8 @@ uint8_t LSM9DS1::discard_measures_mag(uint8_t number_of_measures, uint32_t timeo
 uint8_t LSM9DS1::read_raw_thermo(){
 	uint8_t buffer[2];
 	readMultipleRegisters(_chipSelectPin_XG, buffer, 2, LSM9DS1_OUT_TEMP_L);
-	int16_t temperature_tmp = (((int16_t) buffer[1] << 12) | buffer[0] << 4) >>4;
-	temperature = (float) 20 + temperature_tmp * 0.125; // Guessing that the intercept is at about 20°C 
+	int16_t temperature_tmp = (((int16_t) buffer[1] << 12) | buffer[0] << 4) >> 4;
+	temperature = (float) 20 + temperature_tmp * 0.125f; // Guessing that the intercept is at about 20°C 
 	return 1;
 }
 
