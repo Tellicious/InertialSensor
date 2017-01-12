@@ -8,7 +8,7 @@
 uint8_t INS_Gyro::instanced=0;
 
 //=====================================Constructor==========================================//
-INS_Gyro::INS_Gyro(InertialSensor &sensor, float &meas_x, float &meas_y, float &meas_z, INS_orientation orientation):_sens(sensor){
+INS_Gyro::INS_Gyro(GyroscopeSensor &sensor, float &meas_x, float &meas_y, float &meas_z, INS_orientation orientation):_sens(sensor){
 	switch (orientation){
 		case (X_FRONT_Z_UP):
 			_x_p = &meas_x;

@@ -9,7 +9,7 @@ uint8_t INS_Baro::instanced=0;
 float INS_Baro::invP0 = 1.0f / INS_BARO_DEFAULT_GROUND;
 
 //=====================================Constructor==========================================//
-INS_Baro::INS_Baro(InertialSensor &sensor, float &meas):_sens(sensor){
+INS_Baro::INS_Baro(BarometerSensor &sensor, float &meas):_sens(sensor){
 	_press_p = &meas;
 	press = *_press_p;
 	invP0 = 1.0f / INS_BARO_DEFAULT_GROUND;

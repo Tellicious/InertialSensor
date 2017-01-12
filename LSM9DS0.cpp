@@ -7,8 +7,11 @@
 //
 
 #include "LSM9DS0.h"
+#include "INS_AuxFun.h"
+#ifdef INS_ARDUINO
 #include "Arduino.h"
 #include <SPI.h>
+#endif
 //====================================Registers Addresses=========================================// 
 #define LSM9DS0_WHO_AM_I_G		0x0F
 #define LSM9DS0_CTRL_REG1_G 	0x20
@@ -99,52 +102,24 @@
 #define LSM9DS0_MULT		0x40
 
 //==================================Auxiliary Functions========================================//
-//---------------Read one register from the SPI-----------------//
-uint8_t LSM9DS0::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
-	uint8_t inByte = 0;   	// incoming byte
-	thisRegister |= LSM9DS0_READ;		// register in read mode
-	//uint8_t oldSPCR = SPCR;				// actual SPI configuration register
-	//SPCR = _mySPCR;						// set the desired SPCR
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(thisRegister);		// send the command to read thisRegister
-	inByte = SPI.transfer(0x00);		// send 0x00 in order to read the incoming byte
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	//SPCR = oldSPCR;						// restores the old SPCR
-	return(inByte);			// return the read byte
-}
-
-//------------Read multiple registers from the SPI--------------//
-void LSM9DS0::readMultipleRegisters(uint8_t chipSelectPin, uint8_t * buffer, uint8_t number_of_registers, uint8_t startRegister) {
-	startRegister |= (LSM9DS0_READ | LSM9DS0_MULT);// register in multiple read mode
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(startRegister);		// send the command to read thisRegister
-	while (number_of_registers--){
-		*buffer++ = SPI.transfer(0x00);
-	}
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	return;
-}
-
-//---------------Write one register on the SPI-----------------//
-void LSM9DS0::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(thisRegister); 		// send register location
-	SPI.transfer(thisValue); 		// send value to record into register
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	return;
-}
-
-//-----------------Check values for self-test-------------------//
-uint8_t LSM9DS0::ch_st (const float val1, const float val2, const float lim1, const float lim2){
-    if (fabs(lim1) > fabs(lim2)){
-        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
-    }
-    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
-    
-}
-
+#ifdef INS_ARDUINO
+  #define LSM9DS0_READ_REGISTER_G(reg) INS_SPI_readRegister(_chipSelectPin_G, reg, LSM9DS0_READ)
+  #define LSM9DS0_READ_MULTIPLE_REGISTERS_G(buf, num, start) INS_SPI_readMultipleRegisters(_chipSelectPin_G, buf, num, startRegister, (LSM9DS0_READ | LSM9DS0_MULT))
+  #define LSM9DS0_WRITE_REGISTER_G(reg, val) INS_SPI_writeRegister(_chipSelectPin_G, reg, val, 0x00)
+  #define LSM9DS0_READ_REGISTER_XM(reg) INS_SPI_readRegister(_chipSelectPin_XM, reg, LSM9DS0_READ)
+  #define LSM9DS0_READ_MULTIPLE_REGISTERS_XM(buf, num, start) INS_SPI_readMultipleRegisters(_chipSelectPin_XM, buf, num, startRegister, (LSM9DS0_READ | LSM9DS0_MULT))
+  #define LSM9DS0_WRITE_REGISTER_XM(reg, val) INS_SPI_writeRegister(_chipSelectPin_XM, reg, val, 0x00)
+#elif defined(INS_CHIBIOS)
+  #define LSM9DS0_READ_REGISTER_G(reg) INS_SPI_readRegister(_SPI_int, _spicfg_G, reg, LSM9DS0_READ)
+  #define LSM9DS0_READ_MULTIPLE_REGISTERS_G(buf, num, start) INS_SPI_readMultipleRegisters(_SPI_int, _spicfg_G, buf, num, start, (LSM9DS0_READ | LSM9DS0_MULT))
+  #define LSM9DS0_WRITE_REGISTER_G(reg, val) INS_SPI_writeRegister(_SPI_int, _spicfg_G, reg, val, 0x00)
+  #define LSM9DS0_READ_REGISTER_XM(reg) INS_SPI_readRegister(_SPI_int, _spicfg_XM, reg, LSM9DS0_READ)
+  #define LSM9DS0_READ_MULTIPLE_REGISTERS_XM(buf, num, start) INS_SPI_readMultipleRegisters(_SPI_int, _spicfg_XM, buf, num, start, (LSM9DS0_READ | LSM9DS0_MULT))
+  #define LSM9DS0_WRITE_REGISTER_XM(reg, val) INS_SPI_writeRegister(_SPI_int, _spicfg_XM, reg, val, 0x00)
+#endif
 //=====================================Constructors==========================================//
-LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM):InertialSensor(){
+#ifdef INS_ARDUINO
+LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM):InertialSensor(), AccelerometerSensor(), GyroscopeSensor(), MagnetometerSensor(), ThermometerSensor(){
 	_chipSelectPin_G = CS_pin_G;
 	_chipSelectPin_XM = CS_pin_XM;
 	_DRDY_pin_G = 0;
@@ -152,7 +127,7 @@ LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM):InertialSensor(){
 	_DRDY_pin_M = 0;
 }
 
-LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM, uint8_t DRDY_pin_G, uint8_t DRDY_pin_A, uint8_t DRDY_pin_M):InertialSensor(){
+LSM9DS0::LSM9DS0 (uint8_t CS_pin_G, uint8_t CS_pin_XM, uint8_t DRDY_pin_G, uint8_t DRDY_pin_A, uint8_t DRDY_pin_M):InertialSensor(), AccelerometerSensor(), GyroscopeSensor(), MagnetometerSensor(), ThermometerSensor(){
 	_chipSelectPin_G = CS_pin_G;
 	_chipSelectPin_XM = CS_pin_XM;
 	_DRDY_pin_G = DRDY_pin_G;
@@ -183,15 +158,63 @@ void LSM9DS0::init(){
 	mz = 0;
 	temperature = 0;
 }
+#elif defined(INS_CHIBIOS)
+LSM9DS0::LSM9DS0 (SPIDriver* SPI, SPIConfig* spicfg_G, SPIConfig* spicfg_XM):InertialSensor(), AccelerometerSensor(), GyroscopeSensor(), MagnetometerSensor(), ThermometerSensor(){
+	_SPI_int = SPI;
+	_spicfg_G = spicfg_G;
+	_spicfg_XM = spicfg_XM;
+	_DRDY_pin_G = 0;
+	_DRDY_pin_A = 0;
+	_DRDY_pin_M = 0;
+	init();
+}
+
+LSM9DS0::LSM9DS0 (SPIDriver* SPI, SPIConfig* spicfg_G, SPIConfig* spicfg_XM, ioportid_t gpio_DRDY_G, uint8_t DRDY_pin_G, ioportid_t gpio_DRDY_A, uint8_t DRDY_pin_A, ioportid_t gpio_DRDY_M, uint8_t DRDY_pin_M):InertialSensor(), AccelerometerSensor(), GyroscopeSensor(), MagnetometerSensor(), ThermometerSensor(){
+	_SPI_int = SPI;
+	_spicfg_G = spicfg_G;
+	_spicfg_XM = spicfg_XM;
+	_gpio_DRDY_G = gpio_DRDY_G;
+	_DRDY_pin_G = DRDY_pin_G;
+	_gpio_DRDY_A = gpio_DRDY_A;
+	_DRDY_pin_A = DRDY_pin_A;
+	_gpio_DRDY_M = gpio_DRDY_M;
+	_DRDY_pin_M = DRDY_pin_M;
+	init();
+}
+
+//-----------------------Initialization-----------------------//
+void LSM9DS0::init(){
+	palSetPad(_spicfg_G->ssport, _spicfg_G->sspad);
+	palSetPadMode(_spicfg_G->ssport, _spicfg_G->sspad, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+	palSetPad(_spicfg_XM->ssport, _spicfg_XM->sspad);
+	palSetPadMode(_spicfg_XM->ssport, _spicfg_XM->sspad, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+	if ((_DRDY_pin_G != 0) || (_DRDY_pin_A != 0) || (_DRDY_pin_M != 0)){
+		palSetPadMode(_gpio_DRDY_G, _DRDY_pin_G, PAL_MODE_INPUT);
+		palSetPadMode(_gpio_DRDY_A, _DRDY_pin_A, PAL_MODE_INPUT);
+		palSetPadMode(_gpio_DRDY_M, _DRDY_pin_M, PAL_MODE_INPUT);
+	}
+	// initialize variables
+	gx = 0;
+	gy = 0;
+	gz = 0;
+	ax = 0;
+	ay = 0;
+	az = 0;
+	mx = 0;
+	my = 0;
+	mz = 0;
+	temperature = 0;
+}
+#endif
 
 //=================================Public Members Gyro=======================================//
 //-----------------------Configuration-----------------------//
 uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq){
 	init();
 	// Trash the first reading
-	readRegister(_chipSelectPin_G, LSM9DS0_WHO_AM_I_G);
+	LSM9DS0_READ_REGISTER_G(LSM9DS0_WHO_AM_I_G);
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin_G, LSM9DS0_WHO_AM_I_G) != LSM9DS0_ID_G){
+	if (LSM9DS0_READ_REGISTER_G(LSM9DS0_WHO_AM_I_G) != LSM9DS0_ID_G){
 		return 0;
 	}
 	//
@@ -204,19 +227,19 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 		//no DEN interrupt, no High-pass filter
 		CTRL2_val = 0x00;
 	}
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG2_G, CTRL2_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG2_G, CTRL2_val);
 	//
 	//Data ready on DRDY_G
 	uint8_t CTRL3_val = (1 << 3);
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG3_G, CTRL3_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG3_G, CTRL3_val);
 	//
 	//Continuous update, Little endian, selected range, normal self-test, SPI 4-wire
 	uint8_t CTRL4_val = (0 << 7) | gyro_range; 
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G, CTRL4_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG4_G, CTRL4_val);
 	//
 	//FIFO control on Bypass Mode
 	uint8_t FIFO_CTRL_val = 0x00;
-	writeRegister(_chipSelectPin_G, LSM9DS0_FIFO_CTRL_REG_G, FIFO_CTRL_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_FIFO_CTRL_REG_G, FIFO_CTRL_val);
 	//
 	//Enable FIFO, set HP filter, set LPF2
 	uint8_t CTRL5_val = (1 << 6);
@@ -227,7 +250,7 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 	if (LPF2_enable){ 
 		CTRL5_val |= (0xF);
 	}
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG5_G, CTRL5_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG5_G, CTRL5_val);
 	//
 	switch (gyro_range){
 		case (LSM9DS0_RANGE_G_245):
@@ -244,11 +267,15 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 	}
 	//
 	//Clear the Reference register
-	writeRegister(_chipSelectPin_G, LSM9DS0_REFERENCE_G, 0x00);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_REFERENCE_G, 0x00);
 	//Selected ODR, power on, 3-axis enabled
 	_CTRL1_val_G = (gyro_odr << 4) | (1 << 3) | 0x7;
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G, _CTRL1_val_G);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG1_G, _CTRL1_val_G);
+#ifdef INS_ARDUINO
 	delay(200);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(200);
+#endif
 	// Discard the first n measures
 	if(! discard_measures_gyro(LSM9DS0_DISCARDED_MEASURES, LSM9DS0_DISCARD_TIMEOUT)){
 		return 0;
@@ -258,24 +285,28 @@ uint8_t LSM9DS0::config_gyro(uint8_t gyro_range, uint8_t gyro_odr, uint8_t LPF2_
 
 //-------------------------Turn on---------------------------//
 void LSM9DS0::turn_on_gyro(){
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G,_CTRL1_val_G);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG1_G,_CTRL1_val_G);
+#ifdef INS_ARDUINO
 	delay(200);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(200);
+#endif
 }
 
 //------------------------Turn off---------------------------//
 void LSM9DS0::turn_off_gyro(){
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G,(_CTRL1_val_G & 0xF7));
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG1_G,(_CTRL1_val_G & 0xF7));
 }
 
 //-------------------------Sleep-----------------------------//
 void LSM9DS0::sleep_gyro(){
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG1_G,(_CTRL1_val_G & 0xF8));
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG1_G,(_CTRL1_val_G & 0xF8));
 }
 
 //------------------------Read data-------------------------//
 uint8_t LSM9DS0::read_raw_gyro(){
 	uint8_t buffer[6];
-	readMultipleRegisters(_chipSelectPin_G, buffer, 6, LSM9DS0_OUT_X_L_G);
+	LSM9DS0_READ_MULTIPLE_REGISTERS_G(buffer, 6, LSM9DS0_OUT_X_L_G);
 	gx = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact_g);
 	gy = (float) (((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact_g);
 	gz = (float) (((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact_g);
@@ -284,33 +315,16 @@ uint8_t LSM9DS0::read_raw_gyro(){
 
 //------------------Read data when ready--------------------//
 uint8_t LSM9DS0::read_gyro_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_G)){
-			read_raw_gyro();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 0;
+#ifdef INS_ARDUINO
+	INS_read_DRDY(timeout, read_raw_gyro, _DRDY_pin_G);
+#elif defined(INS_CHIBIOS)
+	INS_read_DRDY(timeout, read_raw_gyro, _gpio_DRDY_G, _DRDY_pin_G);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t LSM9DS0::read_gyro_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = readRegister(_chipSelectPin_G, LSM9DS0_STATUS_REG_G);
-		if (STATUS_val & (1 << 3)){
-			read_raw_gyro();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+	INS_read_STATUS(timeout, read_raw_gyro, status_gyro, (1 << 3));
 }
 
 //--------------------Check biases------------------------//
@@ -337,7 +351,7 @@ uint8_t LSM9DS0::check_gyro_biases(float bx, float by, float bz){
 
 //---------------------High-Pass Reset----------------------//
 void LSM9DS0::HP_reset_gyro(){
-	readRegister(_chipSelectPin_G, LSM9DS0_REFERENCE_G);
+	LSM9DS0_READ_REGISTER_G(LSM9DS0_REFERENCE_G);
 }
 
 //-----------------------Self-Test-------------------------//
@@ -362,14 +376,14 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 	z_pre /= LSM9DS0_GYRO_SELF_TEST_MEASURES;
 	// Turn on self-test
 	turn_off_gyro();
-	uint8_t CTRL4_val = readRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G);
+	uint8_t CTRL4_val = LSM9DS0_READ_REGISTER_G(LSM9DS0_CTRL_REG4_G);
 	if (!mode){
 		CTRL4_val |= (1 << 1); // Self-test mode 0
 	}
 	else {
 		CTRL4_val |= ((1 << 1) | (1 << 2)); // Self-test mode 1
 	}
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G, CTRL4_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG4_G, CTRL4_val);
 	turn_on_gyro();
 	// Discard the first n measures 
 	if( ! discard_measures_gyro(LSM9DS0_DISCARDED_MEASURES_ST, LSM9DS0_DISCARD_TIMEOUT)){
@@ -406,12 +420,12 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 		return 0;
 	}
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
+	if (INS_ch_st(x_pre, x_post, thrs_min, thrs_max) && INS_ch_st(y_pre, y_post, thrs_min, thrs_max) && INS_ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
 	}
 	turn_off_gyro();
 	CTRL4_val &= 0xF9; // Removes Self-Test
-	writeRegister(_chipSelectPin_G, LSM9DS0_CTRL_REG4_G, CTRL4_val);
+	LSM9DS0_WRITE_REGISTER_G(LSM9DS0_CTRL_REG4_G, CTRL4_val);
 	turn_on_gyro();
 	// Discard the first n measures
 	if(! discard_measures_gyro(LSM9DS0_DISCARDED_MEASURES_ST, LSM9DS0_DISCARD_TIMEOUT)){
@@ -422,28 +436,12 @@ uint8_t LSM9DS0::self_test_gyro(uint8_t mode){
 
 //----------------------Gyro Status------------------------//
 uint8_t LSM9DS0::status_gyro(){
-	return readRegister(_chipSelectPin_G, LSM9DS0_STATUS_REG_G);
+	return LSM9DS0_READ_REGISTER_G(LSM9DS0_STATUS_REG_G);
 }
 
 //-------------------Discard measures----------------------//
 uint8_t LSM9DS0::discard_measures_gyro(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5f)){
-		uint8_t STATUS_value = status_gyro();
-		if (STATUS_value & (1 << 7)){
-			read_raw_gyro();
-			now = micros();
-			count++;
-		}
-		if ((micros() - now) > timeout){
-			return 0;
-		}
-		else if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 1;
+	INS_discard_measures_over(number_of_measures, timeout, read_raw_gyro, status_gyro, (1 << 7));
 }
 
 //=============================Public Members Accelerometer====================================//
@@ -451,15 +449,15 @@ uint8_t LSM9DS0::discard_measures_gyro(uint8_t number_of_measures, uint32_t time
 uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_t accel_bw, uint8_t mag_range, uint8_t mag_odr,uint8_t HP_accel_enable){
 	init();
 	// Trash the first reading
-	readRegister(_chipSelectPin_XM, LSM9DS0_WHO_AM_I_XM);
+	LSM9DS0_READ_REGISTER_XM(LSM9DS0_WHO_AM_I_XM);
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin_XM, LSM9DS0_WHO_AM_I_XM) != LSM9DS0_ID_XM){
+	if (LSM9DS0_READ_REGISTER_XM(LSM9DS0_WHO_AM_I_XM) != LSM9DS0_ID_XM){
 		return 0;
 	}
 	//
 	// Enable FIFO Mode
 	uint8_t CTRL0_val = 0x0|(1 << 6);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG0_XM, CTRL0_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG0_XM, CTRL0_val);
 	//
 	switch (accel_range){
 		case (LSM9DS0_RANGE_A_2):
@@ -483,19 +481,19 @@ uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_
 	//
 	// Set selcted anti-alias and full-scale (accelerometer), disable self-test, 4-wire SPI
 	uint8_t CTRL2_val = (accel_bw << 6) | (accel_range << 3);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM, CTRL2_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG2_XM, CTRL2_val);
 	//
 	// Accelerometer data ready on interrupt 1
 	uint8_t CTRL3_val = (1 << 2);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG3_XM, CTRL3_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG3_XM, CTRL3_val);
 	//
 	// Magnetometer data ready on interrupt 2
 	uint8_t CTRL4_val = (1 << 2);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG4_XM, CTRL4_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG4_XM, CTRL4_val);
 	//
 	// Enable temperature sensor, set high-resolution for magnetometer, set selected ODR (magnetometer)
 	uint8_t CTRL5_val = (1 << 7) | (1 << 6) | (1 << 5) | (mag_odr << 2);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG5_XM, CTRL5_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG5_XM, CTRL5_val);
 	//
 	switch (mag_range){
 		case (LSM9DS0_RANGE_M_2):
@@ -516,33 +514,37 @@ uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_
 	//
 	// Set selected full-scale (magnetometer)
 	uint8_t CTRL6_val = (mag_range << 5);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG6_XM, CTRL6_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG6_XM, CTRL6_val);
 	//
 	// Bypass mode on FIFO
 	uint8_t FIFO_CTRL_val = 0x0;
-	writeRegister(_chipSelectPin_XM, LSM9DS0_FIFO_CTRL_REG, FIFO_CTRL_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_FIFO_CTRL_REG, FIFO_CTRL_val);
 	//
 	// Clear the Reference/Offset registers
-	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_X_L_M, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_X_H_M, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Y_L_M, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Y_H_M, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Z_L_M, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_OFFSET_Z_H_M, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_X, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_Y, 0x00);
-	writeRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_Z, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_OFFSET_X_L_M, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_OFFSET_X_H_M, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_OFFSET_Y_L_M, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_OFFSET_Y_H_M, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_OFFSET_Z_L_M, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_OFFSET_Z_H_M, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_REFERENCE_X, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_REFERENCE_Y, 0x00);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_REFERENCE_Z, 0x00);
 	// Set HP filter on accelerometer, magnetometer on continuous conversion
 	_CTRL7_val_XM = 0x0;
 	if (HP_accel_enable){
 		_CTRL7_val_XM = (1 << 5);
 	}
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG7_XM, _CTRL7_val_XM);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG7_XM, _CTRL7_val_XM);
 	//
 	// Set selected ODR (accelerometer), continuous update, turn on the accelerometer
 	_CTRL1_val_XM = (accel_odr << 4) | 0x7;
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG1_XM, _CTRL1_val_XM);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG1_XM, _CTRL1_val_XM);
+#ifdef INS_ARDUINO
 	delay(200);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(200);
+#endif
 	// Discard the first n measures
 	if(! discard_measures_accel(LSM9DS0_DISCARDED_MEASURES, LSM9DS0_DISCARD_TIMEOUT)){
 		return 0;
@@ -557,19 +559,23 @@ uint8_t LSM9DS0::config_accel_mag(uint8_t accel_range, uint8_t accel_odr, uint8_
 
 //----------------Turn on accelerometer----------------//
 void LSM9DS0::turn_on_accel(){
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG1_XM, _CTRL1_val_XM);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG1_XM, _CTRL1_val_XM);
+#ifdef INS_ARDUINO
 	delay(200);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(200);
+#endif
 }
 
 //----------------Turn off accelerometer---------------//
 void LSM9DS0::turn_off_accel(){
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG1_XM, (_CTRL1_val_XM & 0xF));
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG1_XM, (_CTRL1_val_XM & 0xF));
 }
 
 //-----------------Read accelerometer------------------//
 uint8_t LSM9DS0::read_raw_accel(){
 	uint8_t buffer[6];
-	readMultipleRegisters(_chipSelectPin_XM, buffer, 6, LSM9DS0_OUT_X_L_A);
+	LSM9DS0_READ_MULTIPLE_REGISTERS_XM(buffer, 6, LSM9DS0_OUT_X_L_A);
 	ax = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact_a);
 	ay = (float) (((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact_a);
 	az = (float) (((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact_a);
@@ -578,33 +584,16 @@ uint8_t LSM9DS0::read_raw_accel(){
 
 //------------Read accelerometer when ready--------------//
 uint8_t LSM9DS0::read_accel_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_A)){
-			read_raw_accel();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 0;
+#ifdef INS_ARDUINO
+	INS_read_DRDY(timeout, read_raw_accel, _DRDY_pin_A);
+#elif defined(INS_CHIBIOS)
+	INS_read_DRDY(timeout, read_raw_accel, _gpio_DRDY_A, _DRDY_pin_A);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t LSM9DS0::read_accel_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_A);
-		if (STATUS_val & (1 << 3)){
-			read_raw_accel();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+	INS_read_STATUS(timeout, read_raw_accel, status_accel, (1 << 3));
 }
 
 //--------------------Check biases------------------------//
@@ -618,9 +607,9 @@ uint8_t LSM9DS0::check_accel_biases(float bx, float by, float bz){
 
 //---------------Reset high-pass filter-----------------//		
 void LSM9DS0::HP_reset_accel(){
-	readRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_X);
-	readRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_Y);
-	readRegister(_chipSelectPin_XM, LSM9DS0_REFERENCE_Z);
+	LSM9DS0_READ_REGISTER_XM(LSM9DS0_REFERENCE_X);
+	LSM9DS0_READ_REGISTER_XM(LSM9DS0_REFERENCE_Y);
+	LSM9DS0_READ_REGISTER_XM(LSM9DS0_REFERENCE_Z);
 }
 
 //------------Self-test the accelerometer---------------//
@@ -645,14 +634,14 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 	z_pre /= LSM9DS0_ACCEL_SELF_TEST_MEASURES;
 	// Turn off the sensor and setup self-test
 	turn_off_accel();
-	uint8_t CTRL2_val = readRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM);
+	uint8_t CTRL2_val = LSM9DS0_READ_REGISTER_XM(LSM9DS0_CTRL_REG2_XM);
 	if (!mode){
 		CTRL2_val |= (1 << 1); // Self-test mode 0 (positive)
 	}
 	else {
 		CTRL2_val |= (1 << 2); // Self-test mode 1 (negative)
 	}
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM, CTRL2_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG2_XM, CTRL2_val);
 	turn_on_accel();
 	// Discard the first n measures
 	if(! discard_measures_accel(LSM9DS0_DISCARDED_MEASURES_ST,LSM9DS0_DISCARD_TIMEOUT)){
@@ -697,12 +686,12 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 		return 0;
 	}
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, thrs_min, thrs_max) && ch_st(y_pre, y_post, thrs_min, thrs_max) && ch_st(z_pre, z_post, thrs_min, thrs_max)) {
+	if (INS_ch_st(x_pre, x_post, thrs_min, thrs_max) && INS_ch_st(y_pre, y_post, thrs_min, thrs_max) && INS_ch_st(z_pre, z_post, thrs_min, thrs_max)) {
 		status = 1;
 	}
 	turn_off_accel();
 	CTRL2_val &= 0xF9; // Removes Self-Test
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG2_XM, CTRL2_val);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG2_XM, CTRL2_val);
 	turn_on_accel();
 	// Discard the first n measures
 	if(! discard_measures_accel(LSM9DS0_DISCARDED_MEASURES_ST, LSM9DS0_DISCARD_TIMEOUT)){
@@ -713,113 +702,69 @@ uint8_t LSM9DS0::self_test_accel(uint8_t mode){ //self-test: mode 0 - X, Y, Z po
 
 //----------------------Accel Status------------------------//
 uint8_t LSM9DS0::status_accel(){
-	return readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_A);
+	return LSM9DS0_READ_REGISTER_XM(LSM9DS0_STATUS_REG_A);
 }
 
 //-------------------Discard measures----------------------//
 uint8_t LSM9DS0::discard_measures_accel(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5f)){
-		uint8_t STATUS_value = status_accel();
-		if (STATUS_value & (1 << 7)){
-			read_raw_accel();
-			now = micros();
-			count++;
-		}
-		if ((micros()-now) > timeout){
-			return 0;
-		}
-		else if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 1;
+	INS_discard_measures_over(number_of_measures, timeout, read_raw_accel, status_accel, (1 << 7));
 }
 
 //=============================Public Members Magnetometer===================================//
 //-----------------Turn on magnetometer----------------//
 void LSM9DS0::turn_on_mag(){
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG7_XM, _CTRL7_val_XM);
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG7_XM, _CTRL7_val_XM);
+#ifdef INS_ARDUINO
 	delay(200);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(200);
+#endif
 }
 
 //-----------------Turn off magnetometer---------------//
 void LSM9DS0::turn_off_mag(){
-	writeRegister(_chipSelectPin_XM, LSM9DS0_CTRL_REG7_XM, (_CTRL7_val_XM | 0x3));
+	LSM9DS0_WRITE_REGISTER_XM(LSM9DS0_CTRL_REG7_XM, (_CTRL7_val_XM | 0x3));
 }
 
 //------------------Read magnetometer------------------//
 uint8_t LSM9DS0::read_raw_mag(){
 	uint8_t buffer[6];
-	readMultipleRegisters(_chipSelectPin_XM, buffer, 6, LSM9DS0_OUT_X_L_M);
+	LSM9DS0_READ_MULTIPLE_REGISTERS_XM(buffer, 6, LSM9DS0_OUT_X_L_M);
 	mx = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact_m);
 	my = (float) (((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact_m);
 	mz = (float) (((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact_m);
+	return 1;
 }
 
 //------------Read magnetometer when ready-------------//
 uint8_t LSM9DS0::read_mag_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_M)){
-			read_raw_mag();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 0;
+#ifdef INS_ARDUINO
+	INS_read_DRDY(timeout, read_raw_mag, _DRDY_pin_M);
+#elif defined(INS_CHIBIOS)
+	INS_read_DRDY(timeout, read_raw_mag, _gpio_DRDY_M, _DRDY_pin_M);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t LSM9DS0::read_mag_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_M);
-		if (STATUS_val & (1 << 3)){
-			read_raw_mag();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+	INS_read_STATUS(timeout, read_raw_mag, status_mag, (1 << 3));
 }
 
 //-----------------------Mag Status------------------------//
 uint8_t LSM9DS0::status_mag(){
-	return readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_M);
+	return LSM9DS0_READ_REGISTER_XM(LSM9DS0_STATUS_REG_M);
 }
 
 //-------------------Discard measures----------------------//
 uint8_t LSM9DS0::discard_measures_mag(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5f)){
-		uint8_t STATUS_value = status_mag();
-		if (STATUS_value & (1 << 7)){
-			read_raw_mag();
-			now = micros();
-			count++;
-		}
-		if ((micros() - now) > timeout){
-			return 0;
-		}
-		else if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 1;
+	INS_discard_measures_over(number_of_measures, timeout, read_raw_mag, status_mag, (1 << 7));
 }
 
 //=============================Public Members Temperature====================================//
 //------------------------Read data----------------------//
 uint8_t LSM9DS0::read_raw_thermo(){
 	uint8_t buffer[2];
-	readMultipleRegisters(_chipSelectPin_XM,buffer, 2, LSM9DS0_OUT_TEMP_L_XM);
+	LSM9DS0_READ_MULTIPLE_REGISTERS_XM(buffer, 2, LSM9DS0_OUT_TEMP_L_XM);
 	int16_t temperature_tmp = (((int16_t) buffer[1] << 12) | buffer[0] << 4) >> 4;
 	temperature = (float) 20 + temperature_tmp * 0.125f; // Guessing that the intercept is at about 20°C 
 	return 1;
@@ -827,45 +772,19 @@ uint8_t LSM9DS0::read_raw_thermo(){
 
 //------------------Read data when ready-----------------//
 uint8_t LSM9DS0::read_thermo_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin_M)){
-			read_raw_thermo();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 0;
+#ifdef INS_ARDUINO
+	INS_read_DRDY(timeout, read_raw_thermo, _DRDY_pin_M);
+#elif defined(INS_CHIBIOS)
+	INS_read_DRDY(timeout, read_raw_thermo, _gpio_DRDY_M, _DRDY_pin_M);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t LSM9DS0::read_thermo_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = readRegister(_chipSelectPin_XM, LSM9DS0_STATUS_REG_M);
-		if (STATUS_val & (1 << 3)){
-			read_raw_thermo();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+	INS_read_STATUS(timeout, read_raw_thermo, status_mag, (1 << 3));
 }
 
 //-------------------Discard measures----------------------//
 uint8_t LSM9DS0::discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	while (count < (number_of_measures)){
-		if(read_thermo_STATUS(timeout)){
-			count++;
-		}
-		else{
-			return 0;
-		}
-	}
-	return 1;
+	INS_discard_measures(number_of_measures, timeout, read_thermo_STATUS);
 }

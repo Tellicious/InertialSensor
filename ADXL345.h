@@ -7,10 +7,11 @@
 #ifndef ADXL345_H_
 #define ADXL345_H_
 #include "InertialSensor.h"
+#ifdef INS_ARDUINO
 #include <SPI.h>
+#endif
 //======================================Parameters=============================================//
-#define ADXL345_GYRO_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing gyroscope self-test
-#define ADXL345_ACCEL_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing accelerometer self-test
+#define ADXL345_ACCEL_SELF_TEST_MEASURES 10.0f //number of samples to be averaged when performing accelerometer self-test
 #define ADXL345_DISCARDED_MEASURES	6	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define ADXL345_DISCARDED_MEASURES_ST 10 //number of measures to be discarded after performing self-tests (greater than 1, preferably even)
 #define ADXL345_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -37,10 +38,15 @@
 #define ADXL345_RANGE_8			0x02
 #define ADXL345_RANGE_16		0x03
 
-class ADXL345: public InertialSensor{
+class ADXL345: public InertialSensor, public AccelerometerSensor{
 	public:
+#ifdef INS_ARDUINO
 		ADXL345 (uint8_t CS_pin);	//constructor
 		ADXL345 (uint8_t CS_pin, uint8_t DRDY_pin);	//constructor with Data ready pin
+#elif defined(INS_CHIBIOS)
+		ADXL345 (SPIDriver* SPI, SPIConfig* spicfg);	//constructor
+		ADXL345 (SPIDriver* SPI, SPIConfig* spicfg, ioportid_t gpio_DRDY, uint8_t DRDY_pin);	//constructor
+#endif
 		virtual void init(); //initializes pins and variables
 		float x, y, z;	//accelerometer output data
 		//===============Accelerometer================//
@@ -58,11 +64,14 @@ class ADXL345: public InertialSensor{
 	private:
 		float _sc_fact;	//scale factor
 		uint8_t _shift; //shift value for respecting resolution
-		uint8_t _chipSelectPin, _DRDY_pin;	//ChipSelectPin and Data Ready pin
+		uint8_t _DRDY_pin;	//Data Ready pin
 		uint8_t _POWER_CTL_val; //values of the register used when powering up and down the sensor
-		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
-		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
+#ifdef INS_ARDUINO
+		uint8_t _chipSelectPin;
+#elif defined(INS_CHIBIOS)
+		SPIDriver* _SPI_int;
+        SPIConfig* _spicfg;
+		ioportid_t _gpio_DRDY;
+#endif
 };
 #endif

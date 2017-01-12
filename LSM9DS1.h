@@ -7,11 +7,13 @@
 #ifndef LSM9DS1_H_
 #define LSM9DS1_H_
 #include "InertialSensor.h"
+#ifdef INS_ARDUINO
 #include <SPI.h>
+#endif
 //======================================Parameters=============================================//
-#define LSM9DS1_GYRO_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing gyroscope self-test
-#define LSM9DS1_ACCEL_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing accelerometer self-test
-#define LSM9DS1_MAG_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing magnetometer self-test
+#define LSM9DS1_GYRO_SELF_TEST_MEASURES 10.0f //number of samples to be averaged when performing gyroscope self-test
+#define LSM9DS1_ACCEL_SELF_TEST_MEASURES 10.0f //number of samples to be averaged when performing accelerometer self-test
+#define LSM9DS1_MAG_SELF_TEST_MEASURES 10.0f //number of samples to be averaged when performing magnetometer self-test
 #define LSM9DS1_DISCARDED_MEASURES	5	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define LSM9DS1_DISCARDED_MEASURES_ST 10 //number of measures to be discarded after performing self-tests (greater than 1, preferably even)
 #define LSM9DS1_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -73,10 +75,15 @@
 #define LSM9DS1_RANGE_M_12			0x40
 #define LSM9DS1_RANGE_M_16			0x60
 
-class LSM9DS1: public InertialSensor{
+class LSM9DS1: public InertialSensor, public AccelerometerSensor, public GyroscopeSensor, public MagnetometerSensor, public ThermometerSensor {
 	public:
+#ifdef INS_ARDUINO
 		LSM9DS1 (uint8_t CS_pin_XG, uint8_t CS_pin_M);	//constructor
 		LSM9DS1 (uint8_t CS_pin_XG, uint8_t CS_pin_M, uint8_t DRDY_pin_G, uint8_t DRDY_pin_A, uint8_t DRDY_pin_M);	//constructor with Data ready pin
+#elif defined(INS_CHIBIOS)
+		LSM9DS1 (SPIDriver* SPI, SPIConfig* spicfg_XG, SPIConfig* spicfg_M);	//constructor
+		LSM9DS1 (SPIDriver* SPI, SPIConfig* spicfg_XG, SPIConfig* spicfg_M, ioportid_t gpio_DRDY_G, uint8_t DRDY_pin_G, ioportid_t gpio_DRDY_A, uint8_t DRDY_pin_A, ioportid_t gpio_DRDY_M, uint8_t DRDY_pin_M);	//constructor
+#endif		
 		virtual void init(); //initializes pins and variables
 		float gx,gy,gz;	//gyroscope output data
 		float ax,ay,az;	//accelerometer output data
@@ -129,12 +136,15 @@ class LSM9DS1: public InertialSensor{
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
 		float _sc_fact_g, _sc_fact_a, _sc_fact_m;		//scale factors
-		uint8_t _chipSelectPin_XG, _chipSelectPin_M, _DRDY_pin_G, _DRDY_pin_A, _DRDY_pin_M;	//ChipSelectPin and Data Ready pin
+		uint8_t _DRDY_pin_G, _DRDY_pin_A, _DRDY_pin_M;	//Data Ready pins
 		uint8_t _CTRL1_val_XG, _CTRL6_val_XL, _CTRL3_val_M; //values of the register used when powering up and down the sensor
-		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
-		void readMultipleRegisters_M(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
+#ifdef INS_ARDUINO
+		uint8_t _chipSelectPin_XG, _chipSelectPin_M;
+#elif defined(INS_CHIBIOS)
+		SPIDriver* _SPI_int;
+        SPIConfig* _spicfg_XG;
+        SPIConfig* _spicfg_M;
+		ioportid_t _gpio_DRDY_G, _gpio_DRDY_A, _gpio_DRDY_M;
+#endif
 };
 #endif

@@ -8,7 +8,7 @@
 uint8_t INS_Thermo::instanced = 0;
 
 //=====================================Constructor==========================================//
-INS_Thermo::INS_Thermo(InertialSensor &sensor, float &meas):_sens(sensor){
+INS_Thermo::INS_Thermo(ThermometerSensor &sensor, float &meas):_sens(sensor){
 	_temp_p = &meas;
 	temp = *_temp_p;
 	instanced++;

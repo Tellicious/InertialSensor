@@ -7,8 +7,11 @@
 //
 
 #include "LIS3MDL.h"
+#include "INS_AuxFun.h"
+#ifdef INS_ARDUINO
 #include "Arduino.h"
 #include <SPI.h>
+#endif
 //====================================Registers Addresses=========================================// 
 #define LIS3MDL_OFFSET_X_REG_L	0x05
 #define LIS3MDL_OFFSET_X_REG_H	0x06
@@ -41,57 +44,28 @@
 #define LIS3MDL_MULT		0x40
 
 //==================================Auxiliary Functions========================================//
-//---------------Read one register from the SPI-----------------//
-uint8_t LIS3MDL::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
-  uint8_t inByte = 0;           	// incoming byte
-  thisRegister |= LIS3MDL_READ;		// register in read mode
-  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  SPI.transfer(thisRegister);		// send the command to read thisRegister
-  inByte = SPI.transfer(0x00);		// send 0x00 in order to read the incoming byte
-  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
-  return(inByte);			// return the read byte
-}
-
-//------------Read multiple registers from the SPI--------------//
-void LIS3MDL::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister) {
-  startRegister |= (LIS3MDL_READ | LIS3MDL_MULT);// register in multiple read mode
-  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  SPI.transfer(startRegister);		// send the command to read thisRegister
-  while (number_of_registers--){
-  	*buffer++ = SPI.transfer(0x00);
-  }
-  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-  return;
-}
-
-//---------------Write one register on the SPI-----------------//
-void LIS3MDL::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
-  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  SPI.transfer(thisRegister); 		// send register location
-  SPI.transfer(thisValue);  		// send value to record into register
-  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
-}
-
-//-----------------Check values for self-test-------------------//
-uint8_t LIS3MDL::ch_st (const float val1, const float val2, const float lim1, const float lim2){
-    if (fabs(lim1) > fabs(lim2)){
-        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
-    }
-    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
-    
-}
-
+#ifdef INS_ARDUINO
+  #define LIS3MDL_READ_REGISTER(reg) INS_SPI_readRegister(_chipSelectPin, reg, LIS3MDL_READ)
+  #define LIS3MDL_READ_MULTIPLE_REGISTERS(buf, num, start) INS_SPI_readMultipleRegisters(_chipSelectPin, buf, num, startRegister, (LIS3MDL_READ | LIS3MDL_MULT))
+  #define LIS3MDL_WRITE_REGISTER(reg, val) INS_SPI_writeRegister(_chipSelectPin, reg, val, 0x00)
+#elif defined(INS_CHIBIOS)
+  #define LIS3MDL_READ_REGISTER(reg) INS_SPI_readRegister(_SPI_int, _spicfg, reg, LIS3MDL_READ)
+  #define LIS3MDL_READ_MULTIPLE_REGISTERS(buf, num, start) INS_SPI_readMultipleRegisters(_SPI_int, _spicfg, buf, num, start, (LIS3MDL_READ | LIS3MDL_MULT))
+  #define LIS3MDL_WRITE_REGISTER(reg, val) INS_SPI_writeRegister(_SPI_int, _spicfg, reg, val, 0x00)
+#endif
 //=====================================Constructors==========================================//
-LIS3MDL::LIS3MDL (uint8_t CS_pin):InertialSensor(){
+#ifdef INS_ARDUINO
+LIS3MDL::LIS3MDL (uint8_t CS_pin):InertialSensor(), MagnetometerSensor(), BarometerSensor(){
 	_chipSelectPin = CS_pin;
 	_DRDY_pin = 0;
 }
 
-LIS3MDL::LIS3MDL (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(){
+LIS3MDL::LIS3MDL (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(), MagnetometerSensor(), BarometerSensor(){
 	_chipSelectPin = CS_pin;
 	_DRDY_pin = DRDY_pin;
 }
 
+//-----------------------Initialization-----------------------//
 void LIS3MDL::init(){
 	pinMode(_chipSelectPin,OUTPUT);
 	digitalWrite(_chipSelectPin,HIGH);
@@ -103,21 +77,50 @@ void LIS3MDL::init(){
 	z = 0;
 	temperature = 0;
 }
+#elif defined(INS_CHIBIOS)
+LIS3MDL::LIS3MDL (SPIDriver* SPI, SPIConfig* spicfg):InertialSensor(), MagnetometerSensor(), BarometerSensor(){
+	_SPI_int = SPI;
+	_spicfg = spicfg;
+	_DRDY_pin = 0;
+    init();
+}
+
+LIS3MDL::LIS3MDL (SPIDriver* SPI, SPIConfig* spicfg, ioportid_t gpio_DRDY, uint8_t DRDY_pin):InertialSensor(), MagnetometerSensor(), BarometerSensor(){
+	_SPI_int = SPI;
+	_spicfg = spicfg;
+	_gpio_DRDY = gpio_DRDY;
+	_DRDY_pin = DRDY_pin;
+	init();
+}
+
+//-----------------------Initialization-----------------------//
+void LIS3MDL::init(){
+	palSetPad(_spicfg->ssport, _spicfg->sspad);
+	palSetPadMode(_spicfg->ssport, _spicfg->sspad, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+	if (_DRDY_pin != 0){
+		palSetPadMode(_gpio_DRDY, _DRDY_pin, PAL_MODE_INPUT);
+	}
+	x = 0;
+	y = 0;
+	z = 0;
+	temperature = 0;
+}
+#endif
 
 //===================================Public Members=========================================//
 //-----------------------Configuration-----------------------//
 uint8_t LIS3MDL::config_mag(uint8_t range_conf, uint8_t odr_conf){
 	init();
 	// Trash the first reading
-	readRegister(_chipSelectPin, LIS3MDL_WHO_AM_I);
+	LIS3MDL_READ_REGISTER(LIS3MDL_WHO_AM_I);
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin, LIS3MDL_WHO_AM_I) != LIS3MDL_ID){
+	if (LIS3MDL_READ_REGISTER(LIS3MDL_WHO_AM_I) != LIS3MDL_ID){
 		return 0;
 	}
 	//
 	//selected range
 	uint8_t CTRL2_val = range_conf & 0x60;
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL2, CTRL2_val);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL2, CTRL2_val);
 	switch (range_conf){
 		case (LIS3MDL_RANGE_4):
 			_sc_fact = 1.0f / 6842.0f;
@@ -137,30 +140,29 @@ uint8_t LIS3MDL::config_mag(uint8_t range_conf, uint8_t odr_conf){
 	//
 	//continuous update
 	uint8_t CTRL5_val = 0x00;
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL5, CTRL5_val);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL5, CTRL5_val);
 	//
 	//Z-axis on selected performance mode, little endian
 	uint8_t CTRL4_val = ((odr_conf & 0x60) >> 3);
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL4, CTRL4_val);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL4, CTRL4_val);
 	//
-	//temperature enable, selected perfomance mode, selected ODR, no self test
+	//temperature enable, selected performance mode, selected ODR, no self test
 	uint8_t CTRL1_val = (1 << 7) | odr_conf;
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL1, CTRL1_val);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL1, CTRL1_val);
 	//
 	// clearing offset registers
-	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_X_REG_L, 0x00);
-	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_X_REG_H, 0x00);
-	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Y_REG_L, 0x00);
-	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Y_REG_H, 0x00);
-	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Z_REG_L, 0x00);
-	writeRegister(_chipSelectPin, LIS3MDL_OFFSET_Z_REG_H, 0x00);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_OFFSET_X_REG_L, 0x00);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_OFFSET_X_REG_H, 0x00);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_OFFSET_Y_REG_L, 0x00);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_OFFSET_Y_REG_H, 0x00);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_OFFSET_Z_REG_L, 0x00);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_OFFSET_Z_REG_H, 0x00);
 	//
 	//power on, SPI 4 wire, Continuous conversion mode
-	uint8_t _CTRL3_val = 0x00;
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL3, _CTRL3_val);
-	delay(20);
+	_CTRL3_val = 0x00;
+	turn_on_mag();
 	// Discard the first n measures
-	if(! discard_measures_mag(LIS3MDL_DISCARDED_MEASURES,LIS3MDL_DISCARD_TIMEOUT)){
+	if(! discard_measures_mag(LIS3MDL_DISCARDED_MEASURES, LIS3MDL_DISCARD_TIMEOUT)){
 		return 0;
 	}
 	return 1;
@@ -168,19 +170,23 @@ uint8_t LIS3MDL::config_mag(uint8_t range_conf, uint8_t odr_conf){
 
 //-------------------------Turn on---------------------------//
 void LIS3MDL::turn_on_mag(){
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL3, _CTRL3_val);
-	delay(20);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL3, _CTRL3_val);
+#ifdef INS_ARDUINO
+	delay(60);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(60);
+#endif
 }
 
 //------------------------Turn off---------------------------//
 void LIS3MDL::turn_off_mag(){
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL3, (_CTRL3_val | 0x03));
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL3, (_CTRL3_val | 0x03));
 }
 
 //------------------------Read data-------------------------//
 uint8_t LIS3MDL::read_raw_mag(){
 	uint8_t buffer[6];
-  	readMultipleRegisters(_chipSelectPin, buffer, 6, LIS3MDL_OUT_XL);
+  	LIS3MDL_READ_MULTIPLE_REGISTERS(buffer, 6, LIS3MDL_OUT_XL);
   	x = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact);
   	y = (float) (((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact);
   	z = (float) (((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact);
@@ -189,42 +195,25 @@ uint8_t LIS3MDL::read_raw_mag(){
 
 //------------------Read data when ready--------------------//
 uint8_t LIS3MDL::read_mag_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin)){
-			read_raw_mag();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+#ifdef INS_ARDUINO
+    INS_read_DRDY(timeout, read_raw_mag, _DRDY_pin);
+#elif defined(INS_CHIBIOS)
+    INS_read_DRDY(timeout, read_raw_mag, _gpio_DRDY, _DRDY_pin);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t LIS3MDL::read_mag_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = readRegister(_chipSelectPin, LIS3MDL_STATUS);
-		if (STATUS_val & (1 << 3)){
-			read_raw_mag();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+  INS_read_STATUS(timeout, read_raw_mag, status_mag, (1 << 3));
 }
 
 //-----------------------Self-Test-------------------------//
 uint8_t LIS3MDL::self_test_mag(){
 	uint8_t status = 0;
 	// Use FS = 12 Gauss
-	uint8_t CTRL2_old = readRegister(_chipSelectPin, LIS3MDL_CTRL2);
+	uint8_t CTRL2_old = LIS3MDL_READ_REGISTER(LIS3MDL_CTRL2);
 	uint8_t CTRL2_val = LIS3MDL_RANGE_12 | (CTRL2_old & 0x0F);
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL2, CTRL2_val);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL2, CTRL2_val);
 	// Discard the first n measures
 	if(!discard_measures_mag(LIS3MDL_DISCARDED_MEASURES_ST, LIS3MDL_DISCARD_TIMEOUT)){
 		return 0;
@@ -245,10 +234,9 @@ uint8_t LIS3MDL::self_test_mag(){
 	// Turn on self-test
 	turn_off_mag();
 	// Enable the self-test
-	uint8_t CTRL1_val = readRegister(_chipSelectPin, LIS3MDL_CTRL1);
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL1, (CTRL1_val | 0x01));
+	uint8_t CTRL1_val = LIS3MDL_READ_REGISTER(LIS3MDL_CTRL1);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL1, (CTRL1_val | 0x01));
 	turn_on_mag();
-	delay(60);
 	// Discard the first n measures 
 	if(! discard_measures_mag(LIS3MDL_DISCARDED_MEASURES_ST, LIS3MDL_DISCARD_TIMEOUT)){
 		return 0;
@@ -270,24 +258,15 @@ uint8_t LIS3MDL::self_test_mag(){
 	float thrs_xy_max = 3.0f;
 	float thrs_z_min = 0.1f;
 	float thrs_z_max = 1.0f;
-	if (ch_st(x_pre, x_post, thrs_xy_min, thrs_xy_max) && ch_st(y_pre, y_post, thrs_xy_min, thrs_xy_max) && ch_st(z_pre, z_post, thrs_z_min, thrs_z_max)) {
+	if (INS_ch_st(x_pre, x_post, thrs_xy_min, thrs_xy_max) && INS_ch_st(y_pre, y_post, thrs_xy_min, thrs_xy_max) && INS_ch_st(z_pre, z_post, thrs_z_min, thrs_z_max)) {
 		status = 1;
 	}
-	/*
-	// Define Threshold based on datasheet (quite high...it could be between 1 and 3 (x and y) and between 0.1 and 1 (z))
-	float thrs_xy = 2;
-	float thrs_z = 0.5;
-	// Check if values are bigger than the threshold
-	if ((fabs(x) > thrs_xy) && (fabs(y) > thrs_xy) && (fabs(z) > thrs_z)){
-		status = 1;
-	}*/
 	turn_off_mag();
 	// Remove self test
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL1, CTRL1_val);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL1, CTRL1_val);
 	// Reset correct FS value
-	writeRegister(_chipSelectPin, LIS3MDL_CTRL2, CTRL2_old);
+	LIS3MDL_WRITE_REGISTER(LIS3MDL_CTRL2, CTRL2_old);
 	turn_on_mag();
-	delay(60);
 	// Discard the first n measures
 	if(! discard_measures_mag(LIS3MDL_DISCARDED_MEASURES_ST, LIS3MDL_DISCARD_TIMEOUT)){
 		return 0;
@@ -297,88 +276,39 @@ uint8_t LIS3MDL::self_test_mag(){
 
 //----------------------Mag Status------------------------//
 uint8_t LIS3MDL::status_mag(){
-	return readRegister(_chipSelectPin, LIS3MDL_STATUS);
+	return LIS3MDL_READ_REGISTER(LIS3MDL_STATUS);
 }
 
 //-------------------Discard measures----------------------//
 uint8_t LIS3MDL::discard_measures_mag(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5)){
-		uint8_t STATUS_value = status_mag();
-		if (STATUS_value & (1 << 7)){
-			read_raw_mag();
-			now = micros();
-			count++;
-		}
-		if ((micros() - now) > timeout){
-			return 0;
-		}
-		else if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 1;
+  INS_discard_measures_over(number_of_measures, timeout, read_raw_mag, status_mag, (1<<7));
 }
 
 //=============================Public Members Temperature====================================//
 //------------------------Read data----------------------//
 uint8_t LIS3MDL::read_raw_thermo(){
 	uint8_t buffer[2];
-	readMultipleRegisters(_chipSelectPin, buffer, 2, LIS3MDL_TEMP_OUT_L);
+	LIS3MDL_READ_MULTIPLE_REGISTERS(buffer, 2, LIS3MDL_TEMP_OUT_L);
 	int16_t temperature_tmp = (((int16_t) buffer[1] << 8) | buffer[0]);
-	temperature = (float) 25.0 + temperature_tmp * 0.125;
+	temperature = (float) 25.0f + temperature_tmp * 0.125f;
 	return 1;
 }
 
 //------------------Read data when ready-----------------//
 uint8_t LIS3MDL::read_thermo_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin)){
-			read_raw_thermo();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 0;
+#ifdef INS_ARDUINO
+    INS_read_DRDY(timeout, read_raw_thermo, _DRDY_pin);
+#elif defined(INS_CHIBIOS)
+    INS_read_DRDY(timeout, read_raw_thermo, _gpio_DRDY, _DRDY_pin);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t LIS3MDL::read_thermo_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = status_mag();
-		if (STATUS_val & (1 << 3)){
-			read_raw_thermo();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-return 0;
+  INS_read_STATUS(timeout, read_raw_thermo, status_mag, (1 << 3));
 }
 
 //-------------------Discard measures----------------------//
 uint8_t LIS3MDL::discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	uint32_t now = micros();
-	while (count < (number_of_measures * 0.5)){
-		uint8_t STATUS_value = status_mag();
-		if (STATUS_value & (1 << 7)){
-			read_raw_thermo();
-			now = micros();
-			count++;
-		}
-		if ((micros() - now) > timeout){
-			return 0;
-		}
-		else if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 1;
+  INS_discard_measures_over(number_of_measures, timeout, read_raw_thermo, status_mag, (1<<7));
 }

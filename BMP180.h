@@ -7,7 +7,9 @@
 #ifndef BMP180_H_
 #define BMP180_H_
 #include "InertialSensor.h"
+#ifdef INS_ARDUINO
 #include <Wire.h>
+#endif
 //======================================Parameters=============================================//
 #define BMP180_DISCARDED_MEASURES	10	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define BMP180_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -37,9 +39,13 @@ typedef struct{
 			
 } bmp180_calibration_data;
 
-class BMP180: public InertialSensor {
+class BMP180: public InertialSensor, public BarometerSensor, public ThermometerSensor {
 	public:
+#ifdef INS_ARDUINO
 		BMP180 ();	//constructor
+#elif defined(INS_CHIBIOS)
+		BMP180(I2CDriver* I2C, I2CConfig* i2ccfg); //constructor
+#endif
 		virtual void init(); //initializes pins and variables
 		float press, temperature; //output data
 		uint8_t config_baro(uint8_t oversamp); //configure the barometer
@@ -64,9 +70,43 @@ class BMP180: public InertialSensor {
 		uint8_t _bmp180_read_press_cmd; //pressure reading command
 		uint8_t _bmp180OSS; //power mode (oversampling) 
 		bmp180_calibration_data _bmp180_calib; //calibration data struct
-		uint8_t readRegister(uint8_t thisRegister);
-		void readMultipleRegisters(uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		uint8_t writeRegister(uint8_t thisRegister, const uint8_t thisValue);
 		int32_t computeB5(int32_t raw_t);
+#ifdef INS_CHIBIOS
+		I2CDriver* _I2C_int;
+		I2CConfig* _i2ccfg;
+#endif
 };
 #endif
+/**
+ * @brief   Supported modes for the I2C bus.
+ */
+/*
+typedef enum {
+  OPMODE_I2C = 1,
+  OPMODE_SMBUS_DEVICE = 2,
+  OPMODE_SMBUS_HOST = 3,
+} i2copmode_t;
+*/
+/**
+ * @brief   Supported duty cycle modes for the I2C bus.
+ */
+/*
+typedef enum {
+  STD_DUTY_CYCLE = 1,
+  FAST_DUTY_CYCLE_2 = 2,
+  FAST_DUTY_CYCLE_16_9 = 3,
+} i2cdutycycle_t;
+*/
+/**
+ * @brief   Type of I2C driver configuration structure.
+ */
+/*
+typedef struct {
+  // End of the mandatory fields.
+  i2copmode_t     op_mode;       // @brief Specifies the I2C mode.
+  uint32_t        clock_speed;   // @brief Specifies the clock frequency.
+                                 //     @note Must be set to a value lower
+                                 //     than 400kHz.
+  i2cdutycycle_t  duty_cycle;    // @brief Specifies the I2C fast mode
+                                 //   duty cycle.
+} I2CConfig; */

@@ -7,8 +7,11 @@
 //
 
 #include "ADXL345.h"
+#include "INS_AuxFun.h"
+#ifdef INS_ARDUINO
 #include "Arduino.h"
 #include <SPI.h>
+#endif
 //====================================Registers Addresses=========================================// 
 #define ADXL345_DEVID 			0x00 
 #define ADXL345_THRESH_TAP 		0x1D 
@@ -45,54 +48,23 @@
 #define ADXL345_READ			0x80
 #define ADXL345_MULT			0x40
 //==================================Auxiliary Functions========================================//
-//---------------Read one register from the SPI-----------------//
-uint8_t ADXL345::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
-	uint8_t inByte = 0;   	// incoming byte
-	thisRegister |= ADXL345_READ;		// register in read mode
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(thisRegister);		// send the command to read thisRegister
-	inByte = SPI.transfer(0x00);		// send 0x00 in order to read the incoming byte
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	return(inByte);			// return the read byte
-}
-
-//------------Read multiple registers from the SPI--------------//
-void ADXL345::readMultipleRegisters(uint8_t chipSelectPin, uint8_t * buffer, uint8_t number_of_registers, uint8_t startRegister) {
-	startRegister |= (ADXL345_READ | ADXL345_MULT);// register in multiple read mode
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(startRegister);		// send the command to read thisRegister
-	while (number_of_registers--){
-		*buffer++ = SPI.transfer(0x00);
-	}
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	return;
-}
-
-//---------------Write one register on the SPI-----------------//
-void ADXL345::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(thisRegister); 		// send register location
-	SPI.transfer(thisValue); 		// send value to record into register
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-	return;
-}
-
-//-----------------Check values for self-test-------------------//
-uint8_t ADXL345::ch_st (const float val1, const float val2, const float lim1, const float lim2){
-    if (fabs(lim1) > fabs(lim2)){
-        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
-    }
-    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
-    
-}
-
+#ifdef INS_ARDUINO
+  #define ADXL345_READ_REGISTER(reg) INS_SPI_readRegister(_chipSelectPin, reg, ADXL345_READ)
+  #define ADXL345_READ_MULTIPLE_REGISTERS(buf, num, start) INS_SPI_readMultipleRegisters(_chipSelectPin, buf, num, startRegister, (ADXL345_READ | ADXL345_MULT))
+  #define ADXL345_WRITE_REGISTER(reg, val) INS_SPI_writeRegister(_chipSelectPin, reg, val, 0x00)
+#elif defined(INS_CHIBIOS)
+  #define ADXL345_READ_REGISTER(reg) INS_SPI_readRegister(_SPI_int, _spicfg, reg, ADXL345_READ)
+  #define ADXL345_READ_MULTIPLE_REGISTERS(buf, num, start) INS_SPI_readMultipleRegisters(_SPI_int, _spicfg, buf, num, start, (ADXL345_READ | ADXL345_MULT))
+  #define ADXL345_WRITE_REGISTER(reg, val) INS_SPI_writeRegister(_SPI_int, _spicfg, reg, val, 0x00)
+#endif
 //=====================================Constructors==========================================//
-ADXL345::ADXL345 (uint8_t CS_pin):InertialSensor(){
+#ifdef INS_ARDUINO
+ADXL345::ADXL345 (uint8_t CS_pin):InertialSensor(), AccelerometerSensor(){
 	_chipSelectPin = CS_pin;
 	_DRDY_pin = 0;
 }
 
-ADXL345::ADXL345 (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(){
+ADXL345::ADXL345 (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(), AccelerometerSensor(){
 	_chipSelectPin = CS_pin;
 	_DRDY_pin = DRDY_pin;
 }
@@ -109,7 +81,35 @@ void ADXL345::init(){
 	y = 0;
 	z = 0;
 }
+#elif defined(INS_CHIBIOS)
+ADXL345::ADXL345 (SPIDriver* SPI, SPIConfig* spicfg):InertialSensor(), AccelerometerSensor(){
+	_SPI_int = SPI;
+	_spicfg = spicfg;
+	_DRDY_pin = 0;
+    init();
+}
 
+ADXL345::ADXL345 (SPIDriver* SPI, SPIConfig* spicfg, ioportid_t gpio_DRDY, uint8_t DRDY_pin):InertialSensor(), AccelerometerSensor(){
+	_SPI_int = SPI;
+	_spicfg = spicfg;
+	_gpio_DRDY = gpio_DRDY;
+	_DRDY_pin = DRDY_pin;
+	init();
+}
+
+//-----------------------Initialization-----------------------//
+void ADXL345::init(){
+	palSetPad(_spicfg->ssport, _spicfg->sspad);
+	palSetPadMode(_spicfg->ssport, _spicfg->sspad, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+	if (_DRDY_pin != 0){
+		palSetPadMode(_gpio_DRDY, _DRDY_pin, PAL_MODE_INPUT);
+	}
+	// initialize variables
+	x = 0;
+	y = 0;
+	z = 0;
+}
+#endif
 //=============================Public Members Accelerometer====================================//
 //-----------------------Configuration-----------------------//
 uint8_t ADXL345::config_accel(uint8_t accel_range, uint8_t accel_odr){
@@ -119,62 +119,65 @@ uint8_t ADXL345::config_accel(uint8_t accel_range, uint8_t accel_odr){
 	_sc_fact = INS_G_VAL / 256.0f;
 	//
 	// Trash the first reading
-	readRegister(_chipSelectPin, ADXL345_DEVID);
+	ADXL345_READ_REGISTER(ADXL345_DEVID);
 	//
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin, ADXL345_DEVID) != ADXL345_ID){
+	if (ADXL345_READ_REGISTER(ADXL345_DEVID) != ADXL345_ID){
 		return 0;
 	}
 	//
 	// Selected bandwidth
 	uint8_t BW_RATE_val = accel_odr;
-	writeRegister(_chipSelectPin, ADXL345_BW_RATE, BW_RATE_val);
+	ADXL345_WRITE_REGISTER(ADXL345_BW_RATE, BW_RATE_val);
 	//
 	// Enable DRDY and Overrun interrupts
 	uint8_t INT_ENABLE_val = (1 << 7) | 0x01;
-	writeRegister(_chipSelectPin, ADXL345_INT_ENABLE, INT_ENABLE_val);
+	ADXL345_WRITE_REGISTER(ADXL345_INT_ENABLE, INT_ENABLE_val);
 	//
 	// DRDY on INT1 pin, Overrun on INT2 pin
 	uint8_t INT_MAP_val = 0x7F;
-	writeRegister(_chipSelectPin, ADXL345_INT_MAP, INT_MAP_val);
+	ADXL345_WRITE_REGISTER(ADXL345_INT_MAP, INT_MAP_val);
 	//
 	// Reset offsets
-	writeRegister(_chipSelectPin, ADXL345_OFSX, 0x00);
-	writeRegister(_chipSelectPin, ADXL345_OFSY, 0x00);
-	writeRegister(_chipSelectPin, ADXL345_OFSZ, 0x00);
+	ADXL345_WRITE_REGISTER(ADXL345_OFSX, 0x00);
+	ADXL345_WRITE_REGISTER(ADXL345_OFSY, 0x00);
+	ADXL345_WRITE_REGISTER(ADXL345_OFSZ, 0x00);
 	//
 	// No self-test, 4-wires SPI, selected range 
 	uint8_t DATA_FORMAT_val = (1 << 3) | accel_range;
-	writeRegister(_chipSelectPin, ADXL345_DATA_FORMAT, DATA_FORMAT_val);
+	ADXL345_WRITE_REGISTER(ADXL345_DATA_FORMAT, DATA_FORMAT_val);
 	//
 	// Turn on the accel 
 	_POWER_CTL_val = (1 << 3);
-	writeRegister(_chipSelectPin, ADXL345_POWER_CTL, _POWER_CTL_val);
+	turn_on_accel();
 	//
 	// Discard the first n accel measures
 	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES, ADXL345_DISCARD_TIMEOUT)){
 		return 0;
 	}
-	delay(200);
 	return 1;
 }
 
 //----------------Turn on accelerometer----------------//
 void ADXL345::turn_on_accel(){
-	writeRegister(_chipSelectPin, ADXL345_POWER_CTL, _POWER_CTL_val);
+	ADXL345_WRITE_REGISTER(ADXL345_POWER_CTL, _POWER_CTL_val);
+#ifdef INS_ARDUINO
 	delay(200);
+#elif defined(INS_CHIBIOS)
+	chThdSleepMilliseconds(200);
+#endif
 }
 
 //----------------Turn off accelerometer---------------//
 void ADXL345::turn_off_accel(){
-	uint8_t POWER_CTL_val = readRegister(_chipSelectPin, ADXL345_POWER_CTL);
-	writeRegister(_chipSelectPin, ADXL345_POWER_CTL, (POWER_CTL_val & 0xF7));
+	uint8_t POWER_CTL_val = ADXL345_READ_REGISTER(ADXL345_POWER_CTL);
+	ADXL345_WRITE_REGISTER(ADXL345_POWER_CTL, (POWER_CTL_val & 0xF7));
 }
 
 //-----------------Read accelerometer------------------//
 uint8_t ADXL345::read_raw_accel(){
 	uint8_t buffer[6];
-	readMultipleRegisters(_chipSelectPin, buffer, 6, ADXL345_DATAX0);
+	ADXL345_READ_MULTIPLE_REGISTERS(buffer, 6, ADXL345_DATAX0);
 	x = (float) ((int16_t) ((buffer[1] << 8) | buffer[0]) * _sc_fact);
 	y = (float) ((int16_t) ((buffer[3] << 8) | buffer[2]) * _sc_fact);
 	z = (float) ((int16_t) ((buffer[5] << 8) | buffer[4]) * _sc_fact);
@@ -183,34 +186,16 @@ uint8_t ADXL345::read_raw_accel(){
 
 //------------Read accelerometer when ready--------------//
 uint8_t ADXL345::read_accel_DRDY(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin)){
-			read_raw_accel();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	return 0;
+#ifdef INS_ARDUINO
+    INS_read_DRDY(timeout, read_raw_accel, _DRDY_pin);
+#elif defined(INS_CHIBIOS)
+    INS_read_DRDY(timeout, read_raw_accel, _gpio_DRDY, _DRDY_pin);
+#endif
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t ADXL345::read_accel_STATUS(uint32_t timeout){
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		uint8_t STATUS_val = readRegister(_chipSelectPin, ADXL345_INT_SOURCE);
-		if (STATUS_val & 0x80){
-			read_raw_accel();
-			return 1;
-		}
-		if ((micros() - now) < 0){
-			now = 0L;
-		}
-	}
-	delay(200);
-return 0;
+    INS_read_STATUS(timeout, read_raw_accel, status_accel, 0x80);
 }
 
 //--------------------Check biases------------------------//
@@ -244,8 +229,8 @@ uint8_t ADXL345::self_test_accel(){
 	z_pre /= ADXL345_ACCEL_SELF_TEST_MEASURES;
 	// Turn off the sensor and setup self-test
 	turn_off_accel();
-	uint8_t DATA_FORMAT_val = readRegister(_chipSelectPin, ADXL345_DATA_FORMAT);
-	writeRegister(_chipSelectPin, ADXL345_DATA_FORMAT, (DATA_FORMAT_val | (1 << 7)));
+	uint8_t DATA_FORMAT_val = ADXL345_READ_REGISTER(ADXL345_DATA_FORMAT);
+	ADXL345_WRITE_REGISTER(ADXL345_DATA_FORMAT, (DATA_FORMAT_val | (1 << 7)));
 	turn_on_accel();
 	// Discard the first n measures
 	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES_ST, ADXL345_DISCARD_TIMEOUT)){
@@ -265,9 +250,10 @@ uint8_t ADXL345::self_test_accel(){
 	y_post /= ADXL345_ACCEL_SELF_TEST_MEASURES;
 	z_post /= ADXL345_ACCEL_SELF_TEST_MEASURES;
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, 10.4f, 17.4f) && ch_st(y_pre, y_post, 10.4f, 17.4f) && ch_st(z_pre, z_post, 13.5f, 19.7f)) {
+	if (INS_ch_st(x_pre, x_post, 10.4f, 17.4f) && INS_ch_st(y_pre, y_post, 10.4f, 17.4f) && INS_ch_st(z_pre, z_post, 13.5f, 19.7f)) {
 		status = 1;
 	}
+#ifdef INS_ARDUINO
 	else {
 		Serial.println(x_pre);
 		Serial.println(x_post);
@@ -276,8 +262,9 @@ uint8_t ADXL345::self_test_accel(){
 		Serial.println(z_pre);
 		Serial.println(z_post);
 	}
+#endif
 	turn_off_accel();
-	writeRegister(_chipSelectPin, ADXL345_DATA_FORMAT, DATA_FORMAT_val);
+	ADXL345_WRITE_REGISTER(ADXL345_DATA_FORMAT, DATA_FORMAT_val);
 	turn_on_accel();
 	// Discard the first n measures
 	if(! discard_measures_accel(ADXL345_DISCARDED_MEASURES_ST, ADXL345_DISCARD_TIMEOUT)){
@@ -288,17 +275,10 @@ uint8_t ADXL345::self_test_accel(){
 
 //----------------------Accel Status------------------------//
 uint8_t ADXL345::status_accel(){
-	return readRegister(_chipSelectPin, ADXL345_INT_SOURCE);
+	return ADXL345_READ_REGISTER(ADXL345_INT_SOURCE);
 }
 
 //-------------------Discard measures----------------------//
 uint8_t ADXL345::discard_measures_accel(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-	while (count < (number_of_measures)){
-		if(! read_accel_STATUS(timeout)){
-			return 0;
-		}
-		count++;
-	}
-	return 1;
+  INS_discard_measures(number_of_measures, timeout, read_accel_STATUS);
 }

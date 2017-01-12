@@ -7,7 +7,9 @@
 #ifndef LSM6DS3_H_
 #define LSM6DS3_H_
 #include "InertialSensor.h"
+#ifdef INS_ARDUINO
 #include <SPI.h>
+#endif
 //======================================Parameters=============================================//
 #define LSM6DS3_GYRO_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing gyroscope self-test
 #define LSM6DS3_ACCEL_SELF_TEST_MEASURES 10 //number of samples to be averaged when performing accelerometer self-test
@@ -61,10 +63,15 @@
 #define LSM6DS3_HP_A_ODR_9			0x40
 #define LSM6DS3_HP_A_ODR_400		0x60
 
-class LSM6DS3: public InertialSensor{
+class LSM6DS3: public InertialSensor, public AccelerometerSensor, public GyroscopeSensor, public ThermometerSensor{
 	public:
+#ifdef INS_ARDUINO
 		LSM6DS3 (uint8_t CS_pin);	//constructor
 		LSM6DS3 (uint8_t CS_pin, uint8_t DRDY_pin_G, uint8_t DRDY_pin_A);	//constructor with Data ready pin
+#elif defined(INS_CHIBIOS)
+		LSM6DS3 (SPIDriver* SPI, SPIConfig* spicfg);    //constructor
+		LSM6DS3 (SPIDriver* SPI, SPIConfig* spicfg, ioportid_t gpio_DRDY_G, uint8_t DRDY_pin_G, ioportid_t gpio_DRDY_A, uint8_t DRDY_pin_A);    //constructor stm32_gpio_t*
+#endif
 		virtual void init(); //initializes pins and variables
 		float gx,gy,gz;	//gyroscope output data
 		float ax,ay,az;	//accelerometer output data
@@ -104,11 +111,14 @@ class LSM6DS3: public InertialSensor{
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
 		float _sc_fact_g, _sc_fact_a;	//scale factors
-		uint8_t _chipSelectPin, _DRDY_pin_G, _DRDY_pin_A;	//ChipSelectPin and Data Ready pin
+		uint8_t _DRDY_pin_G, _DRDY_pin_A;	//ChipSelectPin and Data Ready pin
 		uint8_t _CTRL1_val, _CTRL2_val; //values of the register used when powering up and down the sensor
-		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
-		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
-		uint8_t ch_st (const float val1, const float val2, const float lim1, const float lim2);
+#ifdef INS_ARDUINO
+        uint8_t _chipSelectPin;
+#elif defined(INS_CHIBIOS)
+        SPIDriver* _SPI_int;
+        SPIConfig* _spicfg;
+        ioportid_t _gpio_DRDY_G, _gpio_DRDY_A;
+#endif
 };
 #endif

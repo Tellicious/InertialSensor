@@ -7,7 +7,9 @@
 #ifndef LPS25HB_H_
 #define LPS25HB_H_
 #include "InertialSensor.h"
+#ifdef INS_ARDUINO
 #include <SPI.h>
+#endif
 //======================================Parameters=============================================//
 #define LPS25HB_DISCARDED_MEASURES	10	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define LPS25HB_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -35,10 +37,15 @@
 #define LPS25HB_MA_16				0x0F
 #define LPS25HB_MA_32				0x1F
 
-class LPS25HB: public InertialSensor {
+class LPS25HB: public InertialSensor, public BarometerSensor, public ThermometerSensor {
 	public:
+#ifdef INS_ARDUINO
 		LPS25HB (uint8_t CS_pin);	//constructor
 		LPS25HB (uint8_t CS_pin, uint8_t DRDY_pin);	//constructor with Data ready pin
+#elif defined(INS_CHIBIOS)
+		LPS25HB (SPIDriver* SPI, SPIConfig* spicfg);	//constructor
+		LPS25HB (SPIDriver* SPI, SPIConfig* spicfg, ioportid_t gpio_DRDY, uint8_t DRDY_pin);	//constructor
+#endif
 		virtual void init(); //initializes pins and variables
 		float press, temperature; //output data
 		uint8_t config_baro(uint8_t odr_conf, uint8_t AVGT, uint8_t AVGP, uint8_t MA_FIFO); //configure the barometer
@@ -61,10 +68,14 @@ class LPS25HB: public InertialSensor {
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
 		float _sc_fact = 1.0f / 4096.0f;		//scale factor
-		uint8_t _chipSelectPin, _DRDY_pin;	//ChipSelectPin and Data Ready pin
+		uint8_t _DRDY_pin;	//Data Ready pin
 		uint8_t _CTRL1_val; //value of the register, used when powering up and down the sensor
-		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
-		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
+#ifdef INS_ARDUINO
+		uint8_t _chipSelectPin;
+#elif defined(INS_CHIBIOS)
+		SPIDriver* _SPI_int;
+        SPIConfig* _spicfg;
+		ioportid_t _gpio_DRDY;
+#endif
 };
 #endif

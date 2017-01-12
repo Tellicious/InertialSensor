@@ -16,12 +16,12 @@ public:
 	uint8_t instance; //instance number of this thermometer
 	float temp; //output values
 	float bt; //thermometer bias (if any)
-	INS_Thermo(InertialSensor &sensor, float &meas); //constructor
+	INS_Thermo(ThermometerSensor &sensor, float &meas); //constructor
 	uint8_t read(uint32_t timeout=INS_THERMO_TIMEOUT); //read data, timeout in us
 	void turn_on(); //turn on the sensor
 	void turn_off(); //turn off the sensor
 private:
-	InertialSensor &_sens;
+	ThermometerSensor &_sens;
 	float* _temp_p;
 };
 #endif

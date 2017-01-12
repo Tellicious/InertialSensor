@@ -7,7 +7,9 @@
 #ifndef BMP280_H_
 #define BMP280_H_
 #include "InertialSensor.h"
+#ifdef INS_ARDUINO
 #include <SPI.h>
+#endif
 //======================================Parameters=============================================//
 #define BMP280_DISCARDED_MEASURES	10	//number of measures to be discarded when performing automatic tasks (greater than 1, preferably even)
 #define BMP280_DISCARD_TIMEOUT		2e6 //timeout time in us between measures when discarding
@@ -66,9 +68,13 @@ typedef struct{
 			
 } bmp280_calibration_data;
 
-class BMP280: public InertialSensor {
+class BMP280: public InertialSensor, public BarometerSensor, public ThermometerSensor {
 	public:
+	#ifdef INS_ARDUINO
 		BMP280 (uint8_t CS_pin);	//constructor
+	#elif defined(INS_CHIBIOS)
+		BMP280 (SPIDriver* SPI, SPIConfig* SPIcfg);	//constructor
+	#endif
 		virtual void init(); //initializes pins and variables
 		float press, temperature; //output data
 		uint8_t config_baro(uint8_t standy_time, uint8_t mode, uint8_t press_oversamp, uint8_t temp_oversamp, uint8_t IIR_coeff); //configure the barometer
@@ -92,12 +98,14 @@ class BMP280: public InertialSensor {
 		uint8_t read_thermo_STATUS(uint32_t timeout); //read data from thermometer if available (reads the status register), timeout in us
 		virtual uint8_t discard_measures_thermo(uint8_t number_of_measures, uint32_t timeout); //discards the first n measures after being called, timeout in us
 	private:
+	#ifdef INS_ARDUINO
 		uint8_t _chipSelectPin;	//ChipSelectPin
+	#elif defined(INS_CHIBIOS)
+		SPIDriver* _SPI_int;
+		SPIConfig* _spicfg;
+	#endif
 		uint8_t _CTRL_MEAS_val; //value of the register, used when powering up and down the sensor
 		bmp280_calibration_data _bmp280_calib; //calibration data struct
-		uint8_t readRegister(uint8_t chipSelectPin, uint8_t thisRegister);
-		void readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister);
-		void writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue);
 		void baro_cal_64_bit(int32_t adc_P); //calibrate pressure reading using 64 bit formula
 		void baro_cal_32_bit(int32_t adc_P); //calibrate pressure reading using 32 bit formula
 		void thermo_cal(int32_t adc_T); //calibrate temperature reading

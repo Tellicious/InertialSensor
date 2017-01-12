@@ -19,7 +19,7 @@ public:
 	float press; //output pressure value
 	static float invP0; //inversed of ground pressure
 	float altitude; //output altitude
-	INS_Baro(InertialSensor &sensor, float &meas); //constructor
+	INS_Baro(BarometerSensor &sensor, float &meas); //constructor
 	uint8_t read(uint32_t timeout=INS_BARO_TIMEOUT); //read data in hPa, timeout in us
 	uint8_t read_altitude(uint32_t timeout); //read altitude in m, timeout in us
 	static uint8_t set_ground(float P0 = INS_BARO_DEFAULT_GROUND); //set ground pressure value
@@ -27,7 +27,7 @@ public:
 	void turn_on(); //turn on the sensor
 	void turn_off(); //turn off the sensor
 private:
-	InertialSensor &_sens;
+	BarometerSensor &_sens;
 	float* _press_p;
 };
 #endif

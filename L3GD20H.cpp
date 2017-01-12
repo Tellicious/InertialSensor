@@ -7,6 +7,7 @@
 //
 
 #include "L3GD20H.h"
+#include "INS_AuxFun.h"
 #ifdef INS_ARDUINO
 #include "Arduino.h"
 #include <SPI.h>
@@ -40,152 +41,75 @@
 #define L3GD20H_IG_DURATION	0x38
 #define L3GD20H_LOW_ODR		0x39
 //=======================================Constants=============================================// 
-#define L3GD20H_ID			0xD7 //0xD4 for L3GD20
+#define L3GD20H_ID			0xD4 //0xD4 for L3GD20, 0xD7 for L3GD20H
 #define L3GD20H_READ		0x80
 #define L3GD20H_MULT		0x40
-
 //==================================Auxiliary Functions========================================//
-//---------------Read one register from the SPI-----------------//
-uint8_t L3GD20H::readRegister(uint8_t chipSelectPin, uint8_t thisRegister) {
-  uint8_t inByte = 0;           	// incoming byte
-  thisRegister |= L3GD20H_READ;		// register in read mode
 #ifdef INS_ARDUINO
-  digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  SPI.transfer(thisRegister);		// send the command to read thisRegister
-  inByte = SPI.transfer(0x00);		// send 0x00 in order to read the incoming byte
-  digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
-#elif INS_CHIBIOS
-	spiAcquireBus(&_SPI_int);
-	spiStart(&_SPI_int, &_spicfg);
-    spiSelect(&_SPI_int);
-    spiSend(&_SPI_int, 1, thisRegister);
-    spiReceive(&_SPI_int, 1, &inByte);
-    spiUnselect(&_SPI_int);
-	spiReleaseBus(&_SPI_int);
+  #define L3GD20H_READ_REGISTER(reg) INS_SPI_readRegister(_chipSelectPin, reg, L3GD20H_READ)
+  #define L3GD20H_READ_MULTIPLE_REGISTERS(buf, num, start) INS_SPI_readMultipleRegisters(_chipSelectPin, buf, num, startRegister, (L3GD20H_READ | L3GD20H_MULT))
+  #define L3GD20H_WRITE_REGISTER(reg, val) INS_SPI_writeRegister(_chipSelectPin, reg, val, 0x00)
+#elif defined(INS_CHIBIOS)
+  #define L3GD20H_READ_REGISTER(reg) INS_SPI_readRegister(_SPI_int, _spicfg, reg, L3GD20H_READ)
+  #define L3GD20H_READ_MULTIPLE_REGISTERS(buf, num, start) INS_SPI_readMultipleRegisters(_SPI_int, _spicfg, buf, num, start, (L3GD20H_READ | L3GD20H_MULT))
+  #define L3GD20H_WRITE_REGISTER(reg, val) INS_SPI_writeRegister(_SPI_int, _spicfg, reg, val, 0x00)
 #endif
-  return(inByte);			// return the read byte
-}
-
-//------------Read multiple registers from the SPI--------------//
-void L3GD20H::readMultipleRegisters(uint8_t chipSelectPin, uint8_t* buffer, uint8_t number_of_registers, uint8_t startRegister) {
-	startRegister |= (L3GD20H_READ | L3GD20H_MULT);// register in multiple read mode
-#ifdef INS_ARDUINO
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-  	SPI.transfer(startRegister);		// send the command to read thisRegister
-  	while (number_of_registers--){
-  		*buffer++ = SPI.transfer(0x00);
-  	}
-  	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to deselect the chip
-#elif INS_CHIBIOS
-	spiAcquireBus(&_SPI_int);
-	spiStart(&_SPI_int, &_spicfg);
-    spiSelect(&_SPI_int);
-    spiSend(&_SPI_int, 1, startRegister);
-    spiReceive(&_SPI_int, number_of_registers, buffer);
-    spiUnselect(&_SPI_int);
-	spiReleaseBus(&_SPI_int);
-#endif
-  	return;
-}
-
-//---------------Write one register on the SPI-----------------//
-void L3GD20H::writeRegister(uint8_t chipSelectPin, uint8_t thisRegister, const uint8_t thisValue) {
-#ifdef INS_ARDUINO
-	digitalWrite(chipSelectPin, LOW);	// ChipSelect low to select the chip
-	SPI.transfer(thisRegister); 		// send register location
-	SPI.transfer(thisValue);  		// send value to record into register
-	digitalWrite(chipSelectPin, HIGH);	// ChipSelect high to select the chip
- #elif INS_CHIBIOS
-	uint8_t buffer [2];
-	buffer [0] = thisRegister;
-	buffer [1] = thisValue;
-	spiAcquireBus(&_SPI_int);
-	spiStart(&_SPI_int, &_spicfg);
-    spiSelect(&_SPI_int);
-    spiSend(&_SPI_int, 2, buffer);
-    spiUnselect(&_SPI_int);
-	spiReleaseBus(&_SPI_int);
- #endif
-	return;
-}
-
-//-----------------Check values for self-test-------------------//
-uint8_t L3GD20H::ch_st (const float val1, const float val2, const float lim1, const float lim2){
-    if (fabs(lim1) > fabs(lim2)){
-        return ((fabs(val2 - val1) >= fabs(lim2)) && (fabs(val2 - val1) <= fabs(lim1)));
-    }
-    return ((fabs(val2 - val1) >= fabs(lim1)) && (fabs(val2 - val1) <= fabs(lim2)));
-}
-
 //=====================================Constructors==========================================//
 #ifdef INS_ARDUINO
-L3GD20H::L3GD20H (uint8_t CS_pin):InertialSensor(){
+L3GD20H::L3GD20H (uint8_t CS_pin):InertialSensor(), GyroscopeSensor(){
 	_chipSelectPin = CS_pin;
 	_DRDY_pin = 0;
 }
 
-L3GD20H::L3GD20H (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(){
+L3GD20H::L3GD20H (uint8_t CS_pin, uint8_t DRDY_pin):InertialSensor(), GyroscopeSensor(){
 	_chipSelectPin = CS_pin;
 	_DRDY_pin = DRDY_pin;
 }
 
+//-----------------------Initialization-----------------------//
 void L3GD20H::init(){
 	pinMode(_chipSelectPin,OUTPUT);
 	digitalWrite(_chipSelectPin, HIGH);
 	if (_DRDY_pin != 0){
 		pinMode(_DRDY_pin, INPUT);
 	}
+    // initialize variables
 	x = 0;
 	y = 0;
 	z = 0;
 }
-#elif INS_CHIBIOS
-L3GD20H::L3GD20H (SPIDriver* SPI, ioportid_t gpio_CS, uin8_t CS_pin):InertialSensor(){
-	_SPI_int = &SPI;
-	_gpio_CS = GPIO_CS;
-	_chipSelectPin = CS_pin;
+#elif defined(INS_CHIBIOS)
+L3GD20H::L3GD20H (SPIDriver* SPI, SPIConfig* spicfg):InertialSensor(), GyroscopeSensor(){
+	_SPI_int = SPI;
+	_spicfg = spicfg;
 	_DRDY_pin = 0;
-	/*SPIConfig spitmp = {
-		NULL,
-		//HW dependent part
-		_gpio_CS,
-		_chipSelectPin,
-		SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_CPOL | SPI_CR1_CPHA
-	};
-	_spicfg = spi_tmp;*/
-	_spicfg.end_cb = NULL;
+    init();
+	/*_spicfg.end_cb = NULL;
 	_spicfg.ssport = _gpio_CS;
 	_spicfg.sspad = _chipSelectPin;
-	_spicfg.cr1 = SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_CPHA; //TO BE CHECKED!!!!!!!!!!!
-	
+	_spicfg.cr1 = SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_CPHA;*/
 }
 
-L3GD20H::L3GD20H (SPIDriver* SPI, ioportid_t gpio_CS, uin8_t CS_pin, ioportid_t gpio_DRDY, uint8_t DRDY_pin):InertialSensor(){
-	_SPI_int = &SPI;
-	_gpio_CS = GPIO_CS;
-	_chipSelectPin = CS_pin;
+L3GD20H::L3GD20H (SPIDriver* SPI, SPIConfig* spicfg, ioportid_t gpio_DRDY, uint8_t DRDY_pin):InertialSensor(), GyroscopeSensor(){
+	_SPI_int = SPI;
+	_spicfg = spicfg;
 	_gpio_DRDY = gpio_DRDY;
 	_DRDY_pin = DRDY_pin;
-		/*SPIConfig spitmp = {
-		NULL,
-		//HW dependent part
-		_gpio_CS,
-		_chipSelectPin,
-		SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_CPOL | SPI_CR1_CPHA
-	};
-	_spicfg = spi_tmp;*/
-	_spicfg.end_cb = NULL;
+	init();
+	/*_spicfg.end_cb = NULL;
 	_spicfg.ssport = _gpio_CS;
 	_spicfg.sspad = _chipSelectPin;
-	_spicfg.cr1 = SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_CPHA; //TO BE CHECKED!!!!!!!!!!!
+	_spicfg.cr1 = SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_CPHA;*/
 }
 
+//-----------------------Initialization-----------------------//
 void L3GD20H::init(){
-	palSetPad(_gpio_CS, _chipSelectPin);
-	palSetPadMode(_gpio_CS, _chipSelectPin, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
+	palSetPad(_spicfg->ssport, _spicfg->sspad);
+	palSetPadMode(_spicfg->ssport, _spicfg->sspad, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
 	if (_DRDY_pin != 0){
 		palSetPadMode(_gpio_DRDY, _DRDY_pin, PAL_MODE_INPUT);
 	}
+    // initialize variables
 	x = 0;
 	y = 0;
 	z = 0;
@@ -197,14 +121,14 @@ void L3GD20H::init(){
 uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_enable, uint8_t HP_enable, uint8_t HP_freq){
 	init();
 	// Trash the first reading
-	readRegister(_chipSelectPin, L3GD20H_WHO_AM_I);
+	L3GD20H_READ_REGISTER(L3GD20H_WHO_AM_I);
 	// Check if the device ID is correct
-	if (readRegister(_chipSelectPin, L3GD20H_WHO_AM_I) != L3GD20H_ID){
+	if (L3GD20H_READ_REGISTER(L3GD20H_WHO_AM_I) != L3GD20H_ID){
 		return 0;
 	}
 	//DRDY/INT2 active high, SPI only, selected ODR
 	uint8_t LOW_ODR_val = (0 << 5) | (1 << 3) | (0 << 2) | ((odr_conf & 0x10) >> 4); 
-	writeRegister(_chipSelectPin, L3GD20H_LOW_ODR,LOW_ODR_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_LOW_ODR,LOW_ODR_val);
 	//
         uint8_t CTRL2_val;
 	if (HP_enable){
@@ -215,19 +139,19 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 		//no DEN interrupt, no High-pass filter
 		CTRL2_val = 0x00;
 	}
-	writeRegister(_chipSelectPin, L3GD20H_CTRL2,CTRL2_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL2,CTRL2_val);
 	//
 	//Data ready on INT2
 	uint8_t CTRL3_val = (1 << 3);
-	writeRegister(_chipSelectPin, L3GD20H_CTRL3,CTRL3_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL3,CTRL3_val);
 	//
 	//continuous update, Little endian, selected range, level sensitive latched disabled, normal self-test, SPI 4-wire
 	uint8_t CTRL4_val = (0 << 7) | range_conf; 
-	writeRegister(_chipSelectPin, L3GD20H_CTRL4,CTRL4_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL4,CTRL4_val);
 	//
 	//FIFO control on Bypass Mode
 	uint8_t FIFO_CTRL_val = 0x00;
-	writeRegister(_chipSelectPin, L3GD20H_FIFO_CTRL,FIFO_CTRL_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_FIFO_CTRL,FIFO_CTRL_val);
 	//
 	//Enable FIFO, set HP filter, set LPF2
 	uint8_t CTRL5_val = (1 << 6);
@@ -238,7 +162,7 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 	if (LPF2_enable){ 
 		CTRL5_val |= (0xF);
 	}
-	writeRegister(_chipSelectPin, L3GD20H_CTRL5,CTRL5_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL5,CTRL5_val);
 	//
 	switch (range_conf){
 		case (L3GD20H_RANGE_245):
@@ -256,12 +180,7 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 	//
 	//selected ODR, power on, 3-axis enabled
 	_CTRL1_val = ((odr_conf & 0xF) << 4) | (1 << 3) | 0x7;
-	writeRegister(_chipSelectPin, L3GD20H_CTRL1,_CTRL1_val);
-#ifdef INS_ARDUINO
-	delay(100);
-#elif INS_CHIBIOS
-	chThdSleepMilliseconds(100);
-#endif
+	turn_on_gyro();
 	// Discard the first n measures
 	if(! discard_measures_gyro(L3GD20H_DISCARDED_MEASURES,L3GD20H_DISCARD_TIMEOUT)){
 		return 0;
@@ -271,28 +190,28 @@ uint8_t L3GD20H::config_gyro(uint8_t range_conf, uint8_t odr_conf, uint8_t LPF2_
 
 //-------------------------Turn on---------------------------//
 void L3GD20H::turn_on_gyro(){
-	writeRegister(_chipSelectPin, L3GD20H_CTRL1,_CTRL1_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL1,_CTRL1_val);
 #ifdef INS_ARDUINO
 	delay(100);
-#elif INS_CHIBIOS
+#elif defined(INS_CHIBIOS)
 	chThdSleepMilliseconds(100);
 #endif
 }
 
 //------------------------Turn off---------------------------//
 void L3GD20H::turn_off_gyro(){
-	writeRegister(_chipSelectPin, L3GD20H_CTRL1,(_CTRL1_val & 0xF7));
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL1,(_CTRL1_val & 0xF7));
 }
 
 //-------------------------Sleep-----------------------------//
 void L3GD20H::sleep_gyro(){
-	writeRegister(_chipSelectPin, L3GD20H_CTRL1,(_CTRL1_val & 0xF8));
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL1,(_CTRL1_val & 0xF8));
 }
 
 //------------------------Read data-------------------------//
 uint8_t L3GD20H::read_raw_gyro(){
 	uint8_t buffer[6];
-  	readMultipleRegisters(_chipSelectPin, buffer, 6, L3GD20H_OUT_X_L);
+  	L3GD20H_READ_MULTIPLE_REGISTERS(buffer, 6, L3GD20H_OUT_X_L);
   	x = (float) (((int16_t) (buffer[1] << 8) | buffer[0]) * _sc_fact);
   	y = (float)	(((int16_t) (buffer[3] << 8) | buffer[2]) * _sc_fact);
   	z = (float)	(((int16_t) (buffer[5] << 8) | buffer[4]) * _sc_fact);
@@ -302,49 +221,15 @@ uint8_t L3GD20H::read_raw_gyro(){
 //------------------Read data when ready--------------------//
 uint8_t L3GD20H::read_gyro_DRDY(uint32_t timeout){
 #ifdef INS_ARDUINO
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-		if (digitalRead(_DRDY_pin)){
-#elif INS_CHIBIOS
-	systime_t now = chVTGetSystemTime();
-	systime_t end = now + US2ST(timeout);
-	while (chTimeIsWithin(now, end)){
-		if (palReadPad(_gpio_DRDY, _DRDY_pin)){
+	INS_read_DRDY(timeout, read_raw_gyro, _DRDY_pin);
+#elif defined(INS_CHIBIOS)
+	INS_read_DRDY(timeout, read_raw_gyro, _gpio_DRDY, _DRDY_pin);
 #endif
-			read_raw_gyro();
-			return 1;
-		}
-#ifdef INS_ARDUINO
-		if ((int32_t) (micros() - now) < 0){
-			now = 0L;
-		}
-#endif
-	}
-return 0;
 }
 
 //---------Read data when ready (STATUS register)-----------//
 uint8_t L3GD20H::read_gyro_STATUS(uint32_t timeout){
-#ifdef INS_ARDUINO
-	uint32_t now = micros();
-	while((micros() - now) < timeout){
-#elif INS_CHIBIOS
-	systime_t now = chVTGetSystemTime();
-	systime_t end = now + US2ST(timeout);
-	while (chTimeIsWithin(now, end)){
-#endif
-		uint8_t STATUS_val = readRegister(_chipSelectPin, L3GD20H_STATUS);
-		if (STATUS_val & (1 << 3)){
-			read_raw_gyro();
-			return 1;
-		}
-#ifdef INS_ARDUINO
-		if ((int32_t) (micros() - now) < 0){
-			now = 0L;
-		}
-#endif
-	}
-return 0;
+	INS_read_STATUS(timeout, read_raw_gyro, status_gyro, (1 << 3));
 }
 
 //--------------------Check biases------------------------//
@@ -371,7 +256,7 @@ uint8_t L3GD20H::check_gyro_biases(float bx, float by, float bz){
 
 //---------------------High-Pass Reset-----------------------//
 void L3GD20H::HP_reset_gyro(){
-	readRegister(_chipSelectPin, L3GD20H_REFERENCE);
+	L3GD20H_READ_REGISTER(L3GD20H_REFERENCE);
 }
 
 //-----------------------Self-Test-------------------------//
@@ -396,14 +281,14 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 	z_pre /= L3GD20H_GYRO_SELF_TEST_MEASURES;
 	// Turn on self-test
 	turn_off_gyro();
-	uint8_t CTRL4_val = readRegister(_chipSelectPin, L3GD20H_CTRL4);
+	uint8_t CTRL4_val = L3GD20H_READ_REGISTER(L3GD20H_CTRL4);
 	if (!mode){
 		CTRL4_val |= (1 << 1); // Self-test mode 0
 	}
 	else {
 		CTRL4_val |= ((1 << 1) | (1 << 2)); // Self-test mode 1
 	}
-	writeRegister(_chipSelectPin, L3GD20H_CTRL4, CTRL4_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL4, CTRL4_val);
 	turn_on_gyro();
 	// Discard the first n measures 
 	if(!discard_measures_gyro(L3GD20H_DISCARDED_MEASURES_ST, L3GD20H_DISCARD_TIMEOUT)){
@@ -437,12 +322,12 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 		return 0;
 	}
 	// Check if values are bigger than the threshold
-	if (ch_st(x_pre, x_post, (0.6f * thrs), (1.4f * thrs)) && ch_st(y_pre, y_post, (0.6f * thrs), (1.4f * thrs)) && ch_st(z_pre, z_post, (0.6f * thrs), (1.4f * thrs))) {
+	if (INS_ch_st(x_pre, x_post, (0.6f * thrs), (1.4f * thrs)) && INS_ch_st(y_pre, y_post, (0.6f * thrs), (1.4f * thrs)) && INS_ch_st(z_pre, z_post, (0.6f * thrs), (1.4f * thrs))) {
 		status = 1;
 	}
 	turn_off_gyro();
 	CTRL4_val &= 0xF9; // Remove Self-Test
-	writeRegister(_chipSelectPin, L3GD20H_CTRL4, CTRL4_val);
+	L3GD20H_WRITE_REGISTER(L3GD20H_CTRL4, CTRL4_val);
 	turn_on_gyro();
 	// Discard the first n measures
 	if(!discard_measures_gyro(L3GD20H_DISCARDED_MEASURES_ST, L3GD20H_DISCARD_TIMEOUT)){
@@ -453,40 +338,10 @@ uint8_t L3GD20H::self_test_gyro(uint8_t mode){
 
 //----------------------Gyro Status------------------------//
 uint8_t L3GD20H::status_gyro(){
-	return readRegister(_chipSelectPin, L3GD20H_STATUS);
+	return L3GD20H_READ_REGISTER(L3GD20H_STATUS);
 }
 
 //-------------------Discard measures----------------------//
 uint8_t L3GD20H::discard_measures_gyro(uint8_t number_of_measures, uint32_t timeout){
-	uint8_t count = 0;
-#ifdef INS_ARDUINO
-	uint32_t now = micros();
-#elif INS_CHIBIOS
-	systime_t now = chVTGetSystemTime();
-#endif
-	while (count < (number_of_measures * 0.5f)){
-		uint8_t STATUS_value = status_gyro();
-		if (STATUS_value & (1 << 7)){
-			read_raw_gyro();
-#ifdef INS_ARDUINO
-			now = micros();
-#elif INS_CHIBIOS
-			now = chVTGetSystemTime();
-#endif
-			count++;
-		}
-#ifdef INS_ARDUINO
-		if ((micros() - now) > timeout){
-			return 0;
-		}
-		else if ((int32_t) (micros() - now) < 0){
-			now = 0L;
-		}
-#elif INS_CHIBIOS
-		if ((chVTGetSystemTime() - now) > US2ST(timeout)){
-			return 0;
-		}
-#endif
-	}
-	return 1;
+	INS_discard_measures_over(number_of_measures, timeout, read_raw_gyro, status_gyro, (1 << 7));
 }
